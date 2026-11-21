@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Onyx</string>
+    <string name="title_activity_main">Onyx</string>
+    <string name="package_name">com.hadi.onyx</string>
+    <string name="custom_url_scheme">com.hadi.onyx</string>
+</resources>
