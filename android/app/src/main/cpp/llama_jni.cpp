@@ -23,7 +23,7 @@ namespace {
 
 constexpr int32_t MIN_CTX_SIZE = 512;
 constexpr int32_t MAX_CTX_SIZE = 4096;
-constexpr int32_t DEFAULT_CTX_SIZE = 2048;
+constexpr int32_t DEFAULT_CTX_SIZE = 1024;
 constexpr int32_t SAFE_BATCH_SIZE = 512;
 constexpr int32_t SAFE_UBATCH_SIZE = 256;
 
@@ -410,7 +410,7 @@ Java_com_hadi_onyx_LocalLLMPlugin_nativeGenerate(
 
         const int32_t remaining_ctx = std::max(0, n_ctx - total_prompt - 1);
         const int32_t target_max_tokens = std::clamp(
-            static_cast<int32_t>(maxTokens > 0 ? maxTokens : 512),
+            static_cast<int32_t>(maxTokens > 0 ? std::min(maxTokens, 256) : 256),
             16,
             std::max(16, remaining_ctx)
         );

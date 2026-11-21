@@ -227,8 +227,7 @@ export async function generateWithNativeLocalLLM(params: {
     return { ok: true, text: identityReply };
   }
   const isBengali = hasBengaliInConversation(trimmedMessage, recentHistory);
-  const baseSystemPrompt =
-    params.systemPrompt.trim() || DEFAULT_GLOBAL_SYSTEM_PROMPT;
+  const baseSystemPrompt = "You are Onyx AI, created by Abdullah Al Hadi. Reply concisely and clearly.";
   const finalSystemPrompt = isBengali
     ? `${baseSystemPrompt}\n\n${BENGALI_SYSTEM_INSTRUCTION}`
     : baseSystemPrompt;
@@ -293,7 +292,7 @@ export async function generateWithNativeLocalLLM(params: {
       systemPrompt: finalSystemPrompt,
       messages: fullMessages,
       temperature: params.temperature,
-      maxTokens: params.maxTokens,
+      maxTokens: Math.min(params.maxTokens || 220, 220),
     });
 
     const finalText = (

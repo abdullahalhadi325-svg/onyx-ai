@@ -6,26 +6,25 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-# Optimize for Android arm64-v8a mobile CPUs
 if(ANDROID_ABI STREQUAL "arm64-v8a")
-    set(ONX_OPT_FLAGS "-O3 -fno-finite-math-only -DNDEBUG -fvisibility=hidden")
+    set(ONX_OPT_FLAGS "-O3 -march=armv8.2-a+fp16+dotprod -fno-finite-math-only -DNDEBUG -fvisibility=hidden")
+    set(GGML_CPU_ARM_ARCH "armv8.2-a+fp16+dotprod" CACHE STRING "" FORCE)
 else()
     set(ONX_OPT_FLAGS "-O3 -DNDEBUG -fvisibility=hidden")
 endif()
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${ONX_OPT_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${ONX_OPT_FLAGS}")
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O3 -fno-finite-math-only")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O3 -fno-finite-math-only")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${ONX_OPT_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${ONX_OPT_FLAGS}")
 
-# Configure llama.cpp / ggml for lightweight Android static compilation
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_COMMON OFF CACHE BOOL "" FORCE)
 set(LLAMA_CURL OFF CACHE BOOL "" FORCE)
-set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
+set(GGML_OPENMP ON CACHE BOOL "" FORCE)
 set(GGML_LLAMAFILE OFF CACHE BOOL "" FORCE)
 set(GGML_VULKAN OFF CACHE BOOL "" FORCE)
 set(GGML_CUDA OFF CACHE BOOL "" FORCE)
@@ -35,16 +34,12 @@ set(GGML_CPU ON CACHE BOOL "" FORCE)
 
 set(LLAMA_CPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp")
 if(NOT EXISTS "${LLAMA_CPP_DIR}/CMakeLists.txt")
-    message(FATAL_ERROR "llama.cpp source not found at ${LLAMA_CPP_DIR}. Clone ggml-org/llama.cpp (tag b5092) into android/app/src/main/cpp/llama.cpp before building.")
+    message(FATAL_ERROR "llama.cpp source not found at ${LLAMA_CPP_DIR}.")
 endif()
 
 add_subdirectory("${LLAMA_CPP_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/llama_build" EXCLUDE_FROM_ALL)
 
-add_library(
-    llama_jni
-    SHARED
-    llama_jni.cpp
-)
+add_library(llama_jni SHARED llama_jni.cpp)
 
 target_include_directories(
     llama_jni
