@@ -22,11 +22,11 @@ jobs:
           SDKMGR="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           yes | "$SDKMGR" --licenses > /dev/null
           "$SDKMGR" "ndk;26.1.10909125" "cmake;3.22.1"
-      - name: Clone llama.cpp if missing
+      - name: Clone llama.cpp (Pinned to b5092)
         run: |
-          if [ ! -d "android/app/src/main/cpp/llama.cpp" ]; then
-            git clone --depth 1 https://github.com/ggml-org/llama.cpp.git android/app/src/main/cpp/llama.cpp
-          fi
+          rm -rf android/app/src/main/cpp/llama.cpp
+          git clone --depth 1 --branch b5092 https://github.com/ggml-org/llama.cpp.git android/app/src/main/cpp/llama.cpp
+          git -C android/app/src/main/cpp/llama.cpp rev-parse HEAD
       - name: Build Web, Generate Icons & Sync Capacitor
         env:
           VITE_BACKEND_API_URL: https://hadi-mp-ai-backend.abdullahalhadi325.workers.dev
@@ -44,11 +44,12 @@ jobs:
           fi
           npm run build
           npx cap sync android
-      - name: Build Debug APK
+      - name: Clean & Build Debug APK
         run: |
+          rm -rf android/app/.cxx android/app/build android/build
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew clean assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: Onyx-AI-OS-APK
