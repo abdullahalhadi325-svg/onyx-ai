@@ -25,7 +25,7 @@ android {
 
         externalNativeBuild {
             cmake {
-                cppFlags "-std=c++17 -O3 -ffast-math -fexceptions"
+                cppFlags "-std=c++17 -O3 -fno-finite-math-only -fexceptions"
                 arguments "-DANDROID_STL=c++_shared", "-DCMAKE_BUILD_TYPE=Release"
             }
         }

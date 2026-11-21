@@ -8,15 +8,15 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Optimize for Android arm64-v8a mobile CPUs
 if(ANDROID_ABI STREQUAL "arm64-v8a")
-    set(ONX_OPT_FLAGS "-O3 -ffast-math -DNDEBUG -fvisibility=hidden")
+    set(ONX_OPT_FLAGS "-O3 -fno-finite-math-only -DNDEBUG -fvisibility=hidden")
 else()
     set(ONX_OPT_FLAGS "-O3 -DNDEBUG -fvisibility=hidden")
 endif()
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${ONX_OPT_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${ONX_OPT_FLAGS}")
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O3 -ffast-math")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O3 -ffast-math")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O3 -fno-finite-math-only")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O3 -fno-finite-math-only")
 
 # Configure llama.cpp / ggml for lightweight Android static compilation
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
@@ -57,7 +57,7 @@ target_compile_options(
     llama_jni
     PRIVATE
     -O3
-    -ffast-math
+    -fno-finite-math-only
     -fexceptions
 )
 
