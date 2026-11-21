@@ -17,11 +17,11 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
-      - uses: android-actions/setup-android@v3
       - name: Install Android NDK & CMake
         run: |
-          yes | sdkmanager --licenses
-          sdkmanager "ndk;26.1.10909125" "cmake;3.22.1"
+          SDKMGR="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMGR" --licenses > /dev/null
+          "$SDKMGR" "ndk;26.1.10909125" "cmake;3.22.1"
       - name: Clone llama.cpp if missing
         run: |
           if [ ! -d "android/app/src/main/cpp/llama.cpp" ]; then
