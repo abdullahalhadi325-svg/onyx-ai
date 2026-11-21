@@ -53,7 +53,7 @@ export function ChatThread({
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    bottomRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
   }, [messages.length, isSending]);
 
   const activeModeLabel =

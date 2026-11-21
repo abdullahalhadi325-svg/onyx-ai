@@ -152,7 +152,7 @@ export async function loadNativeModel(params: {
   if (!plugin) {
     throw new Error('Native Android LocalLLM bridge is unavailable.');
   }
-  return plugin.loadModel(params);
+  return plugin.loadModel({ ...params, nCtx: params.nCtx ?? 2048, nThreads: params.nThreads ?? 4 });
 }
 
 export async function unloadNativeModel(): Promise<void> {
@@ -241,6 +241,8 @@ export async function generateWithNativeLocalLLM(params: {
   const requestId = `native-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const handles: CapacitorPluginListenerHandle[] = [];
   let accumulated = '';
+  let lastEmitTime = 0;
+  let pendingToken = '';
   let completedEvent: LocalLLMCompleteEvent | null = null;
   let errorMessage: string | null = null;
 
@@ -253,7 +255,13 @@ export async function generateWithNativeLocalLLM(params: {
           }
           if (event.token) {
             accumulated += event.token;
-            params.onToken?.(event.token, accumulated);
+            pendingToken += event.token;
+            const now = Date.now();
+            if (now - lastEmitTime >= 60) {
+              params.onToken?.(pendingToken, accumulated);
+              pendingToken = '';
+              lastEmitTime = now;
+            }
           }
         })
       );
@@ -298,6 +306,10 @@ export async function generateWithNativeLocalLLM(params: {
       return { ok: false, text: '', error: errorMessage };
     }
 
+    if (pendingToken) {
+      params.onToken?.(pendingToken, finalText || accumulated);
+      pendingToken = '';
+    }
     if (!finalText) {
       return { ok: false, text: '', error: 'Local model produced an empty response.' };
     }
