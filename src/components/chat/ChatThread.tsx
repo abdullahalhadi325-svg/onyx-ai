@@ -2,48 +2,38 @@ import { useEffect, useRef } from 'react';
 import {
   CheckSquare,
   Detective,
-  FilePdf,
   Image as ImageIcon,
   Paperclip,
   Square,
 } from '@phosphor-icons/react';
 import type {
   ChatMessage,
+  EngineMode,
   InputMode,
-  PendingChatError,
   PersonaId,
   RoutingModeId,
 } from '../../types/onyx';
-import {
-  getThinkingStatusLabel,
-  sanitizeAssistantErrorMessage,
-} from '../../lib/artifacts';
+import { getThinkingStatusLabel } from '../../lib/artifacts';
 import {
   getPersonaOption,
   getRoutingModeOption,
   getTaskCompletionStats,
 } from '../../utils/onyxState';
-import {
-  MessageRenderer,
-  OnyxErrorCard,
-  OnyxThinkingPulse,
-} from './MessageRenderer';
+import { MessageRenderer, OnyxThinkingPulse } from './MessageRenderer';
 
 interface ChatThreadProps {
   messages: ChatMessage[];
   latestRevealingMessageId: string | null;
   isTemporaryChat: boolean;
   isSending: boolean;
+  statusMessage?: string | null;
+  activeEngineMode: EngineMode;
   activeRoutingMode: RoutingModeId;
   activePersona: PersonaId;
   activeInputMode: InputMode;
-  pendingError: PendingChatError | null;
-  onRetry: () => void;
   onToggleTaskStep: (messageId: string, stepId: string) => void;
   onRegenerateMessage: (assistantMessageId: string) => void;
-  onSaveMessageToVault: (message: ChatMessage) => void;
   onBranchFromMessage: (messageId: string) => void;
-  onExportMessagePdf: (message: ChatMessage) => void;
 }
 
 export function ChatThread({
@@ -51,83 +41,92 @@ export function ChatThread({
   latestRevealingMessageId,
   isTemporaryChat,
   isSending,
+  statusMessage,
+  activeEngineMode,
   activeRoutingMode,
   activePersona,
   activeInputMode,
-  pendingError,
-  onRetry,
   onToggleTaskStep,
   onRegenerateMessage,
-  onSaveMessageToVault,
   onBranchFromMessage,
-  onExportMessagePdf,
 }: ChatThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [messages.length, isSending, pendingError]);
+  }, [messages.length, isSending]);
 
-  const activeModeLabel = getRoutingModeOption(activeRoutingMode).label;
+  const activeModeLabel =
+    activeEngineMode === 'local'
+      ? 'Local AI'
+      : getRoutingModeOption(activeRoutingMode).label;
   const activePersonaName = getPersonaOption(activePersona).name;
-  const thinkingStatusLabel = getThinkingStatusLabel(
-    activeRoutingMode,
-    activeInputMode
-  );
+  const thinkingStatusLabel =
+    statusMessage ||
+    getThinkingStatusLabel(
+      activeRoutingMode,
+      activeInputMode,
+      activeEngineMode
+    );
 
   return (
-    <div className="relative z-10 mx-auto w-full max-w-[680px] flex-1 px-4 pt-20 pb-6">
+    <div className="relative z-10 mx-auto w-full max-w-[680px] flex-1 px-4 pt-20 pb-8">
       {isTemporaryChat && (
-        <div className="mb-6 flex items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-[#131209] px-3.5 py-2.5 text-xs text-white/65">
+        <div className="mb-6 flex items-center justify-center gap-2 rounded-2xl bg-[#111116] px-3.5 py-2.5 text-xs text-zinc-400">
           <Detective
             size={15}
             weight="regular"
-            className="shrink-0 text-white/75"
+            className="shrink-0 text-blue-300"
           />
-          <span>Temporary chat active · Not saved to Supabase or vaults</span>
+          <span>Temporary chat active · Not saved to local history or cloud</span>
         </div>
       )}
 
-      <div className="space-y-6" role="log" aria-label="Conversation messages">
+      <div className="space-y-7" role="log" aria-label="Conversation messages">
         {messages.map((message) => {
-          const modeLabel = getRoutingModeOption(message.mode).label;
+          const modeLabel =
+            message.engine === 'local'
+              ? 'Local AI'
+              : getRoutingModeOption(message.mode).label;
           const personaName = getPersonaOption(message.persona).name;
 
           if (message.role === 'user') {
             return (
               <div key={message.id} className="flex flex-col items-end">
-                <div className="max-w-[88%] rounded-2xl border border-white/[0.08] bg-[#1F1F1F] px-4 py-3 text-sm leading-relaxed text-white sm:max-w-[80%] sm:text-base">
-                  <p className="whitespace-pre-wrap text-pretty">
+                <div className="max-w-[88%] overflow-hidden rounded-2xl bg-[#14151C] px-4 py-3 text-sm leading-relaxed text-white sm:max-w-[80%] sm:text-base">
+                  {message.attachedImagePreview && (
+                    <img
+                      src={message.attachedImagePreview}
+                      alt={message.toolsUsed?.attachedFileName || 'Attached visual'}
+                      className="mb-2.5 max-h-48 w-full rounded-xl object-cover"
+                    />
+                  )}
+                  <p className="break-words whitespace-pre-wrap text-pretty">
                     {message.content}
                   </p>
                   {message.toolsUsed &&
-                    (message.toolsUsed.generatePdf ||
-                      message.toolsUsed.createImage ||
+                    (message.toolsUsed.createImage ||
                       message.toolsUsed.attachedFileName) && (
-                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-white/55">
-                        {message.toolsUsed.generatePdf && (
-                          <span className="inline-flex items-center gap-1">
-                            <FilePdf size={13} weight="regular" />
-                            <span>PDF to Telegram</span>
-                          </span>
-                        )}
+                      <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-xs text-zinc-400">
                         {message.toolsUsed.createImage && (
                           <span className="inline-flex items-center gap-1">
-                            <ImageIcon size={13} weight="regular" />
+                            <ImageIcon size={13} weight="regular" className="shrink-0 text-blue-400" />
                             <span>Create Image</span>
                           </span>
                         )}
                         {message.toolsUsed.attachedFileName && (
-                          <span className="inline-flex items-center gap-1">
-                            <Paperclip size={13} weight="regular" />
-                            <span>{message.toolsUsed.attachedFileName}</span>
+                          <span className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-lg bg-white/[0.05] px-2 py-0.5">
+                            <Paperclip size={13} weight="regular" className="shrink-0 text-zinc-400" />
+                            <span className="min-w-0 max-w-full truncate break-all">
+                              {message.toolsUsed.attachedFileName}
+                            </span>
                           </span>
                         )}
                       </div>
                     )}
                 </div>
 
-                {/* Tight user metadata timestamp */}
+                {/* Subtle user metadata timestamp */}
                 <div className="mt-1 flex items-center gap-1.5 px-1 font-mono text-[11px] text-zinc-500 tabular-nums">
                   <span>{message.inputMode === 'task' ? 'Task' : 'Chat'}</span>
                   {message.timestamp && (
@@ -146,10 +145,10 @@ export function ChatThread({
             : null;
 
           return (
-            <article key={message.id} className="min-w-0 max-w-full space-y-3">
-              {/* Quiet unboxed metadata header */}
-              <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs text-white/50 tabular-nums">
-                <span className="font-medium text-white/80">{modeLabel}</span>
+            <article key={message.id} className="min-w-0 max-w-full space-y-2.5">
+              {/* Quiet borderless metadata line */}
+              <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs text-zinc-500 tabular-nums">
+                <span className="font-medium text-zinc-300">{modeLabel}</span>
                 <span aria-hidden="true">·</span>
                 <span>{personaName}</span>
                 {message.timestamp && (
@@ -165,28 +164,30 @@ export function ChatThread({
                 content={message.content}
                 mode={message.mode}
                 persona={message.persona}
+                engine={message.engine}
                 timestamp={message.timestamp}
                 thinkingLog={message.thinkingSummary}
                 thinkingDuration={message.thinkingDuration}
                 mediaCards={message.mediaCards}
                 sources={message.sources}
-                pdfVault={message.pdfVault}
                 generatedImage={message.generatedImage}
-                shouldAnimateReveal={message.id === latestRevealingMessageId}
+                shouldAnimateReveal={
+                  message.id === latestRevealingMessageId &&
+                  !message.isStreamingLive
+                }
+                isStreamingLive={Boolean(message.isStreamingLive)}
                 onRegenerate={() => onRegenerateMessage(message.id)}
-                onSaveToVault={() => onSaveMessageToVault(message)}
                 onBranchChat={() => onBranchFromMessage(message.id)}
-                onExportPdf={() => onExportMessagePdf(message)}
               />
 
               {/* Autonomous checklist rendered when structured steps are present */}
               {message.taskSteps && taskStats && (
-                <div className="rounded-2xl border border-white/[0.08] bg-[#181818] p-2">
+                <div className="rounded-2xl bg-[#111116] p-2">
                   <div className="flex items-center justify-between gap-2 px-2.5 py-2">
-                    <span className="text-xs font-medium text-white/75">
+                    <span className="text-xs font-medium text-zinc-300">
                       Autonomous checklist
                     </span>
-                    <span className="font-mono text-xs text-white/55 tabular-nums">
+                    <span className="font-mono text-xs text-zinc-500 tabular-nums">
                       {taskStats.completed}/{taskStats.total} ·{' '}
                       {taskStats.percent}%
                     </span>
@@ -199,10 +200,10 @@ export function ChatThread({
                         type="button"
                         onClick={() => onToggleTaskStep(message.id, step.id)}
                         aria-pressed={step.done}
-                        className={`flex min-h-[44px] w-full items-start gap-3 rounded-lg px-2.5 py-2.5 text-left active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-transform duration-150 ${
+                        className={`flex min-h-[44px] w-full items-start gap-3 rounded-xl px-2.5 py-2.5 text-left active:scale-[0.97] transition-colors duration-150 ${
                           step.done
-                            ? 'bg-[#131209] text-white/60 hover:bg-[#272727]'
-                            : 'bg-[#1F1F1F] text-white hover:bg-[#313131]'
+                            ? 'bg-[#0C0C10] text-zinc-500 hover:bg-[#17171F]'
+                            : 'bg-[#17171F] text-white hover:bg-[#1F1F2B]'
                         }`}
                       >
                         {step.done ? (
@@ -215,20 +216,20 @@ export function ChatThread({
                           <Square
                             size={18}
                             weight="regular"
-                            className="mt-0.5 shrink-0 text-white/55"
+                            className="mt-0.5 shrink-0 text-zinc-400"
                           />
                         )}
                         <span className="min-w-0 flex-1">
                           <span
                             className={`block text-sm font-medium leading-snug ${
                               step.done
-                                ? 'line-through text-white/55'
+                                ? 'line-through text-zinc-500'
                                 : 'text-white'
                             }`}
                           >
                             {step.label}
                           </span>
-                          <span className="mt-0.5 block text-xs text-white/45">
+                          <span className="mt-0.5 block text-xs text-zinc-400">
                             {step.detail}
                           </span>
                         </span>
@@ -241,23 +242,17 @@ export function ChatThread({
           );
         })}
 
-        {/* Glowing Mini Onyx Orb Thinking Indicator */}
-        {isSending && (
-          <OnyxThinkingPulse
-            statusLabel={thinkingStatusLabel}
-            modeLabel={activeModeLabel}
-            personaName={activePersonaName}
-          />
-        )}
-
-        {/* Clean Crimson Error Card with single Retry button + tiny diagnostic line */}
-        {pendingError && !isSending && (
-          <OnyxErrorCard
-            message={sanitizeAssistantErrorMessage(pendingError.message)}
-            diagnostic={pendingError.diagnostic}
-            onRetry={onRetry}
-          />
-        )}
+        {/* Animated Mini Onyx Orb + Typing Wave Indicator */}
+        {isSending &&
+          !messages.some(
+            (msg) => msg.isStreamingLive && msg.content.length > 0
+          ) && (
+            <OnyxThinkingPulse
+              statusLabel={thinkingStatusLabel}
+              modeLabel={activeModeLabel}
+              personaName={activePersonaName}
+            />
+          )}
       </div>
 
       <div ref={bottomRef} className="h-4" />

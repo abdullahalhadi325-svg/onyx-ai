@@ -1,8 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
+<<<<<<< HEAD
     namespace = "com.hadi.onyx"
     compileSdk = rootProject.ext.compileSdkVersion
+=======
+    namespace "com.hadi.onyx"
+    compileSdk rootProject.ext.compileSdkVersion
+    ndkVersion "26.1.10909125"
+
+>>>>>>> upstream/main
     defaultConfig {
         applicationId "com.hadi.onyx"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -10,22 +17,64 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+<<<<<<< HEAD
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+=======
+
+        aaptOptions {
+            // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+            // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+
+        ndk {
+            abiFilters "arm64-v8a"
+        }
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17 -O3 -ffast-math -fexceptions"
+                arguments "-DANDROID_STL=c++_shared", "-DCMAKE_BUILD_TYPE=Release"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.22.1"
+        }
+    }
+
+>>>>>>> upstream/main
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+<<<<<<< HEAD
 }
 
 repositories {
     flatDir{
+=======
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+}
+
+repositories {
+    flatDir {
+>>>>>>> upstream/main
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
     }
 }

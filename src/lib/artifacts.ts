@@ -1,9 +1,48 @@
-import type { PdfVaultInfo } from '../types/onyx';
-
 export type SpeechLanguageCode = 'en-US' | 'bn-BD';
 
-export const FRIENDLY_ENGINE_ERROR_MESSAGE =
-  'Connection hiccup — the AI engine took too long or a provider failed.';
+export const BENGALI_OFFLINE_FALLBACK =
+  'আপনার ইন্টারনেট সংযোগটি সম্ভবত বিচ্ছিন্ন বা দুর্বল। নেটওয়ার্ক চেক করে আবার চেষ্টা করুন, আমি সাথে সাথেই উত্তর দেব।';
+
+export const BENGALI_BUSY_FALLBACK =
+  'সার্ভার এই মুহূর্তে সাময়িক ব্যস্ত রয়েছে, অনুগ্রহ করে কয়েক সেকেন্ড পর আবার বার্তা পাঠান।';
+
+export const ENGLISH_OFFLINE_FALLBACK =
+  'Your internet connection appears to be offline or weak. Please check your network and try again — I will respond right away.';
+
+export const ENGLISH_BUSY_FALLBACK =
+  'The servers are experiencing momentary traffic right now. Please send your message again in a few seconds.';
+
+export const LOCAL_SERVER_OFFLINE_FALLBACK_BN =
+  'কোনো লোকাল AI মডেল লোড করা নেই বা লোকাল সার্ভার পাওয়া যায়নি। Local AI Hub থেকে একটি GGUF মডেল ডাউনলোড ও লোড করুন, অথবা Cloud AI মোডে সুইচ করুন।';
+
+export const LOCAL_SERVER_OFFLINE_FALLBACK_EN =
+  'No on-device GGUF model is loaded and no local server responded at 127.0.0.1:8080. Download and load a model in the Local AI Hub, or switch back to Cloud AI.';
+
+export function containsBengaliScript(text: string): boolean {
+  return /[\u0980-\u09FF]/.test(text);
+}
+
+export function buildGracefulFallbackReply(params: {
+  prompt: string;
+  speechLang: SpeechLanguageCode;
+  isOffline: boolean;
+  isLocalEngine?: boolean;
+}): string {
+  const useBengali =
+    containsBengaliScript(params.prompt) || params.speechLang === 'bn-BD';
+
+  if (params.isLocalEngine) {
+    return useBengali
+      ? LOCAL_SERVER_OFFLINE_FALLBACK_BN
+      : LOCAL_SERVER_OFFLINE_FALLBACK_EN;
+  }
+
+  if (params.isOffline) {
+    return useBengali ? BENGALI_OFFLINE_FALLBACK : ENGLISH_OFFLINE_FALLBACK;
+  }
+
+  return useBengali ? BENGALI_BUSY_FALLBACK : ENGLISH_BUSY_FALLBACK;
+}
 
 export function buildPollinationsImageUrl(prompt: string): string {
   const cleaned =
@@ -77,18 +116,6 @@ export function buildPreviewSrcDoc(code: string, language?: string): string {
 </html>`;
 }
 
-export function extractPdfMessageId(
-  pdfVault?: PdfVaultInfo | null
-): string | null {
-  if (!pdfVault) {
-    return null;
-  }
-  if (pdfVault.messageId && pdfVault.messageId.trim()) {
-    return pdfVault.messageId.trim();
-  }
-  return null;
-}
-
 export function formatDownloadFilename(
   label: string,
   extension: string = 'png'
@@ -104,8 +131,12 @@ export function formatDownloadFilename(
 
 export function getThinkingStatusLabel(
   routingMode: 'auto' | 'flash' | 'deep-research' | 'deep-think',
-  inputMode: 'chat' | 'task'
+  inputMode: 'chat' | 'task',
+  engineMode: 'cloud' | 'local' = 'cloud'
 ): string {
+  if (engineMode === 'local') {
+    return 'Running local model...';
+  }
   if (inputMode === 'task') {
     return 'Planning tasks...';
   }
@@ -113,12 +144,11 @@ export function getThinkingStatusLabel(
     case 'deep-research':
       return 'Searching web...';
     case 'deep-think':
-      return 'Auditing...';
+      return 'Thinking deeply...';
     case 'flash':
-      return 'Onyx is thinking...';
     case 'auto':
     default:
-      return 'Onyx is routing...';
+      return 'Thinking...';
   }
 }
 
@@ -127,27 +157,6 @@ export function isBackendEngineError(content?: string | null): boolean {
     return false;
   }
   return /^\s*backend engine error\s*:/i.test(content);
-}
-
-export function extractErrorDiagnostic(raw?: string | null): string | undefined {
-  if (!raw || !raw.trim()) {
-    return undefined;
-  }
-  const cleaned = raw
-    .replace(/^\s*backend engine error\s*:\s*/i, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!cleaned) {
-    return undefined;
-  }
-  return cleaned.length > 140 ? `${cleaned.slice(0, 137)}...` : cleaned;
-}
-
-export function sanitizeAssistantErrorMessage(raw?: string | null): string {
-  if (!raw || !raw.trim()) {
-    return FRIENDLY_ENGINE_ERROR_MESSAGE;
-  }
-  return FRIENDLY_ENGINE_ERROR_MESSAGE;
 }
 
 export interface StorageLike {
@@ -189,7 +198,7 @@ export function pruneCorruptedOnyxStorage(storage: StorageLike): string[] {
       }
     }
   } catch {
-    // Ignore storage access restrictions (private mode / WebView policies)
+    // Ignore storage access restrictions
   }
   return removed;
 }
@@ -203,4 +212,13 @@ export function createBranchedMessages<T extends { id: string }>(
     return [...messages];
   }
   return messages.slice(0, index + 1);
+}
+
+export function isValidHttpUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl.trim());
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
