@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowUp,
-  Brain,
   Camera,
   ChatCircleText,
   Check,
   FileArrowUp,
-  FilePdf,
   GlobeHemisphereWest,
   Image as ImageIcon,
   Images,
@@ -16,15 +14,14 @@ import {
   Plus,
   Stop,
   Translate,
-  Vault,
   WarningCircle,
   X,
 } from '@phosphor-icons/react';
 import type { SpeechLanguageCode } from '../../lib/artifacts';
 import type {
   ActiveTools,
+  ImageAttachmentPayload,
   InputMode,
-  MemoryVault,
   RoutingModeId,
 } from '../../types/onyx';
 
@@ -71,19 +68,44 @@ interface InputDockProps {
   routingMode: RoutingModeId;
   onSelectRoutingMode: (mode: RoutingModeId) => void;
   activeTools: ActiveTools;
-  onToggleGeneratePdf: () => void;
   onToggleCreateImage: () => void;
-  onAttachFile: (fileName: string | null, previewUrl?: string | null) => void;
-  isPersonalIntelligenceEnabled: boolean;
-  onTogglePersonalIntelligence: () => void;
-  vaults: MemoryVault[];
-  onSelectVault: (vault: MemoryVault) => void;
+  onAttachFile: (fileName: string | null) => void;
+  onAttachImage: (image: ImageAttachmentPayload | null) => void;
   onSubmit: () => void;
   isSending?: boolean;
+  canStopGeneration?: boolean;
+  onStopGeneration?: () => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 const WAVEFORM_HEIGHTS = [14, 22, 18, 26, 16, 24, 14];
+
+function readFileAsBase64Payload(file: File): Promise<ImageAttachmentPayload> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+      const commaIndex = dataUrl.indexOf(',');
+      if (commaIndex === -1) {
+        reject(new Error('Invalid image encoding'));
+        return;
+      }
+      const header = dataUrl.slice(0, commaIndex);
+      const base64Data = dataUrl.slice(commaIndex + 1);
+      const mimeMatch = /^data:([^;]+);base64$/i.exec(header);
+      const mimeType = file.type || mimeMatch?.[1] || 'image/jpeg';
+
+      resolve({
+        fileName: file.name,
+        mimeType,
+        base64Data,
+        previewUrl: dataUrl,
+      });
+    };
+    reader.onerror = () => reject(new Error('Could not read selected image'));
+    reader.readAsDataURL(file);
+  });
+}
 
 export function InputDock({
   value,
@@ -95,19 +117,16 @@ export function InputDock({
   routingMode,
   onSelectRoutingMode,
   activeTools,
-  onToggleGeneratePdf,
   onToggleCreateImage,
   onAttachFile,
-  isPersonalIntelligenceEnabled,
-  onTogglePersonalIntelligence,
-  vaults,
-  onSelectVault,
+  onAttachImage,
   onSubmit,
   isSending = false,
+  canStopGeneration = false,
+  onStopGeneration,
   textareaRef,
 }: InputDockProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [showVaultPicker, setShowVaultPicker] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
 
@@ -117,7 +136,6 @@ export function InputDock({
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const baseValueRef = useRef<string>('');
   const latestValueRef = useRef<string>(value);
-  const objectUrlRef = useRef<string | null>(null);
 
   latestValueRef.current = value;
 
@@ -132,7 +150,7 @@ export function InputDock({
     el.style.height = `${Math.max(nextHeight, 40)}px`;
   }, [value, textareaRef, isListening]);
 
-  // Clean up SpeechRecognition and object URLs on unmount
+  // Clean up SpeechRecognition on unmount
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
@@ -143,17 +161,12 @@ export function InputDock({
         }
         recognitionRef.current = null;
       }
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = null;
-      }
     };
   }, []);
 
   // Close sheet on Escape
   useEffect(() => {
     if (!isSheetOpen) {
-      setShowVaultPicker(false);
       return;
     }
 
@@ -167,18 +180,19 @@ export function InputDock({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isSheetOpen]);
 
+  const hasAttachedImage = Boolean(activeTools.attachedImage?.previewUrl);
   const canSend =
     !isSending &&
     (value.trim().length > 0 ||
       activeTools.attachedFileName !== null ||
-      activeTools.generatePdf ||
+      hasAttachedImage ||
       activeTools.createImage);
 
   const isDeepResearchOn = routingMode === 'deep-research';
   const hasActiveTools =
-    activeTools.generatePdf ||
     activeTools.createImage ||
-    Boolean(activeTools.attachedFileName);
+    Boolean(activeTools.attachedFileName) ||
+    hasAttachedImage;
 
   function stopVoiceRecognition() {
     if (recognitionRef.current) {
@@ -297,35 +311,35 @@ export function InputDock({
     }
   }
 
-  function handleMediaSelected(
+  async function handleMediaSelected(
     event: React.ChangeEvent<HTMLInputElement>,
     isImagePicker: boolean
   ) {
     const file = event.target.files?.[0];
-    if (file) {
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = null;
-      }
-
-      const isImg = isImagePicker || file.type.startsWith('image/');
-      let nextPreview: string | null = null;
-      if (isImg) {
-        nextPreview = URL.createObjectURL(file);
-        objectUrlRef.current = nextPreview;
-      }
-      onAttachFile(file.name, nextPreview);
-    }
     event.target.value = '';
     setIsSheetOpen(false);
+
+    if (!file) {
+      return;
+    }
+
+    const isImg = isImagePicker || file.type.startsWith('image/');
+    if (isImg) {
+      try {
+        const imagePayload = await readFileAsBase64Payload(file);
+        onAttachImage(imagePayload);
+      } catch {
+        onAttachFile(file.name);
+      }
+    } else {
+      onAttachImage(null);
+      onAttachFile(file.name);
+    }
   }
 
   function handleClearAttachment() {
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-      objectUrlRef.current = null;
-    }
-    onAttachFile(null, null);
+    onAttachImage(null);
+    onAttachFile(null);
   }
 
   function handleDispatch() {
@@ -339,17 +353,17 @@ export function InputDock({
     <>
       <div className="relative z-20 shrink-0 px-3 pt-2 pb-3 sm:px-4 sm:pb-4">
         <div className="mx-auto w-full max-w-[700px] space-y-2">
-          {/* Voice error inline feedback */}
+          {/* Voice notice */}
           {voiceError && (
             <div
               role="status"
-              className="flex items-center justify-between gap-2 rounded-xl border border-white/[0.08] bg-[#131209] px-3 py-2 text-xs text-white/80"
+              className="flex items-center justify-between gap-2 rounded-2xl bg-[#13131A] px-3.5 py-2 text-xs text-zinc-200"
             >
               <span className="flex min-w-0 items-center gap-2">
                 <WarningCircle
                   size={15}
                   weight="regular"
-                  className="shrink-0 text-white/75"
+                  className="shrink-0 text-blue-300"
                 />
                 <span className="truncate">{voiceError}</span>
               </span>
@@ -357,62 +371,49 @@ export function InputDock({
                 type="button"
                 onClick={() => setVoiceError(null)}
                 aria-label="Dismiss voice notice"
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white/55 hover:bg-[#313131] hover:text-white active:scale-[0.98]"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white active:scale-[0.96]"
               >
                 <X size={13} weight="bold" />
               </button>
             </div>
           )}
 
-          {/* Native Camera / Photos Thumbnail Preview Strip */}
-          {activeTools.attachedFileName && activeTools.attachedPreviewUrl && (
-            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#181818]/90 p-2 backdrop-blur-xl">
+          {/* Multimodal Image Preview Strip (Vision -> Gemini) */}
+          {activeTools.attachedImage && (
+            <div className="flex items-center gap-3 rounded-2xl bg-[#12141E] p-2.5">
               <img
-                src={activeTools.attachedPreviewUrl}
-                alt={activeTools.attachedFileName}
-                className="h-14 w-14 shrink-0 rounded-xl border border-white/[0.08] object-cover"
+                src={activeTools.attachedImage.previewUrl}
+                alt={activeTools.attachedImage.fileName}
+                className="h-14 w-14 shrink-0 rounded-xl object-cover"
               />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-xs font-medium text-white">
-                  {activeTools.attachedFileName}
+                <div className="truncate font-sans text-xs font-medium text-white">
+                  {activeTools.attachedImage.fileName}
                 </div>
-                <div className="mt-0.5 font-mono text-xs text-white/45">
-                  Image ready to attach
+                <div className="mt-0.5 font-mono text-[11px] text-blue-300/80">
+                  Vision · Gemini Ready
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleClearAttachment}
-                aria-label={`Remove ${activeTools.attachedFileName}`}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-[#272727] text-white/75 hover:bg-[#313131] hover:text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+                aria-label={`Remove ${activeTools.attachedImage.fileName}`}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-zinc-300 hover:bg-white/[0.12] hover:text-white active:scale-[0.96]"
               >
                 <X size={15} weight="bold" />
               </button>
             </div>
           )}
 
-          {/* Active Tool Chips (only shown when a tool or file is attached) */}
-          {hasActiveTools && (
+          {/* Active Tool Chips */}
+          {hasActiveTools && !activeTools.attachedImage && (
             <div className="flex flex-wrap items-center gap-1.5 px-1">
-              {activeTools.generatePdf && (
-                <button
-                  type="button"
-                  onClick={onToggleGeneratePdf}
-                  aria-label="Remove Generate PDF to Telegram"
-                  className="flex h-8 items-center gap-1.5 rounded-full border border-blue-400/25 bg-[#121622] px-3 font-mono text-xs text-blue-100 hover:bg-[#1A2133] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150"
-                >
-                  <FilePdf size={14} weight="regular" />
-                  <span>PDF</span>
-                  <X size={12} weight="bold" className="text-blue-300/70" />
-                </button>
-              )}
-
               {activeTools.createImage && (
                 <button
                   type="button"
                   onClick={onToggleCreateImage}
                   aria-label="Remove Create Image"
-                  className="flex h-8 items-center gap-1.5 rounded-full border border-blue-400/25 bg-[#121622] px-3 font-mono text-xs text-blue-100 hover:bg-[#1A2133] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150"
+                  className="flex h-8 items-center gap-1.5 rounded-full bg-[#121828] px-3 font-mono text-xs text-blue-200 hover:bg-[#192238] active:scale-[0.96] transition-transform duration-150"
                 >
                   <ImageIcon size={14} weight="regular" />
                   <span>Image · Flux</span>
@@ -420,24 +421,26 @@ export function InputDock({
                 </button>
               )}
 
-              {activeTools.attachedFileName && !activeTools.attachedPreviewUrl && (
+              {activeTools.attachedFileName && (
                 <button
                   type="button"
                   onClick={handleClearAttachment}
                   aria-label={`Detach ${activeTools.attachedFileName}`}
-                  className="flex h-8 max-w-[200px] items-center gap-1.5 rounded-full border border-white/10 bg-[#1B1E28] px-3 font-mono text-xs text-white/85 hover:bg-[#252936] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-transform duration-150"
+                  className="flex h-8 max-w-full items-center gap-1.5 rounded-full bg-[#16171F] px-3 font-mono text-xs text-zinc-200 hover:bg-[#1F212B] active:scale-[0.96] transition-transform duration-150"
                 >
-                  <Paperclip size={14} weight="regular" className="shrink-0" />
-                  <span className="truncate">{activeTools.attachedFileName}</span>
-                  <X size={12} weight="bold" className="shrink-0 text-white/50" />
+                  <Paperclip size={14} weight="regular" className="shrink-0 text-zinc-400" />
+                  <span className="max-w-[220px] truncate">
+                    {activeTools.attachedFileName}
+                  </span>
+                  <X size={12} weight="bold" className="shrink-0 text-zinc-400" />
                 </button>
               )}
             </div>
           )}
 
-          {/* Luminous Sapphire-Lit Glass Floating Input Pill */}
+          {/* Seamless Obsidian Floating Composer Pill */}
           <div
-            className={`relative border border-blue-300/25 bg-[#121622]/75 p-1.5 shadow-[0_0_34px_rgba(37,99,235,0.22)] backdrop-blur-2xl transition-[border-color,box-shadow] duration-200 focus-within:border-blue-400/60 focus-within:shadow-[0_0_40px_rgba(59,130,246,0.32)] ${
+            className={`relative bg-[#11131B]/95 p-1.5 shadow-[0_0_32px_rgba(37,99,235,0.20)] transition-[box-shadow,background-color] duration-200 focus-within:bg-[#141722] focus-within:shadow-[0_0_38px_rgba(59,130,246,0.32)] ${
               value.includes('\n') || value.length > 70
                 ? 'rounded-3xl'
                 : 'rounded-full'
@@ -450,7 +453,7 @@ export function InputDock({
               accept="image/*"
               capture="environment"
               className="hidden"
-              onChange={(event) => handleMediaSelected(event, true)}
+              onChange={(event) => void handleMediaSelected(event, true)}
               aria-hidden="true"
               tabIndex={-1}
             />
@@ -459,7 +462,7 @@ export function InputDock({
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(event) => handleMediaSelected(event, true)}
+              onChange={(event) => void handleMediaSelected(event, true)}
               aria-hidden="true"
               tabIndex={-1}
             />
@@ -467,7 +470,7 @@ export function InputDock({
               ref={filesInputRef}
               type="file"
               className="hidden"
-              onChange={(event) => handleMediaSelected(event, false)}
+              onChange={(event) => void handleMediaSelected(event, false)}
               aria-hidden="true"
               tabIndex={-1}
             />
@@ -504,7 +507,7 @@ export function InputDock({
                     type="button"
                     onClick={stopVoiceRecognition}
                     aria-label="Stop voice dictation"
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#252834] text-white hover:bg-[#303444] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-transform duration-150"
+                    className="flex h-11 w-11 items-center justify-center rounded-full bg-[#222533] text-white hover:bg-[#2C3042] active:scale-[0.96] transition-transform duration-150"
                   >
                     <Stop size={17} weight="fill" />
                   </button>
@@ -514,7 +517,7 @@ export function InputDock({
                     onClick={handleDispatch}
                     disabled={!canSend}
                     aria-label="Send voice message"
-                    className="flex h-11 w-11 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-lg shadow-blue-600/25 hover:bg-[#3B82F6] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 disabled:cursor-not-allowed disabled:opacity-45 transition-transform duration-150"
+                    className="flex h-11 w-11 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-lg shadow-blue-600/25 hover:bg-[#3B82F6] active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-45 transition-transform duration-150"
                   >
                     <ArrowUp size={19} weight="bold" />
                   </button>
@@ -523,7 +526,7 @@ export function InputDock({
             ) : (
               /* Standard Text Input Pill */
               <div className="flex items-end gap-1.5">
-                {/* Left '+' Button opening Action Bottom Sheet */}
+                {/* Left '+' Button opening Clean Action Sheet */}
                 <button
                   type="button"
                   onClick={() => setIsSheetOpen(true)}
@@ -532,7 +535,7 @@ export function InputDock({
                   aria-haspopup="dialog"
                   className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150 ${
                     isSheetOpen || hasActiveTools
-                      ? 'border border-blue-400/30 bg-[#232838] text-white hover:bg-[#2C3347]'
+                      ? 'bg-[#21273A] text-white hover:bg-[#2A324A]'
                       : 'text-zinc-300 hover:bg-white/[0.08] hover:text-white'
                   }`}
                 >
@@ -558,11 +561,13 @@ export function InputDock({
                     onChange={(event) => onChange(event.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={
-                      activeTools.createImage
-                        ? 'Describe an image...'
-                        : inputMode === 'task'
-                          ? 'Describe a task...'
-                          : 'Ask anything...'
+                      hasAttachedImage
+                        ? 'Ask about this image...'
+                        : activeTools.createImage
+                          ? 'Describe an image...'
+                          : inputMode === 'task'
+                            ? 'Describe a task...'
+                            : 'Ask anything...'
                     }
                     className="max-h-40 min-h-[42px] w-full resize-none bg-transparent py-2.5 pl-1 text-sm leading-5 text-white placeholder:text-zinc-400/80 focus-visible:outline-none sm:text-base sm:leading-6"
                   />
@@ -580,19 +585,30 @@ export function InputDock({
                     <Microphone size={19} weight="regular" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={handleDispatch}
-                    disabled={!canSend}
-                    aria-label="Send message"
-                    className={`flex h-11 w-11 items-center justify-center rounded-full active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-transform duration-150 ${
-                      canSend
-                        ? 'bg-[#2563EB] text-white shadow-lg shadow-blue-600/30 hover:bg-[#3B82F6]'
-                        : 'cursor-not-allowed border border-white/[0.08] bg-[#222530] text-zinc-500'
-                    }`}
-                  >
-                    <ArrowUp size={19} weight="bold" />
-                  </button>
+                  {canStopGeneration && onStopGeneration ? (
+                    <button
+                      type="button"
+                      onClick={onStopGeneration}
+                      aria-label="Stop generation"
+                      className="flex h-11 w-11 items-center justify-center rounded-full bg-[#222533] text-white hover:bg-[#2C3042] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-transform duration-150"
+                    >
+                      <Stop size={17} weight="fill" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleDispatch}
+                      disabled={!canSend}
+                      aria-label="Send message"
+                      className={`flex h-11 w-11 items-center justify-center rounded-full active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-transform duration-150 ${
+                        canSend
+                          ? 'bg-[#2563EB] text-white shadow-lg shadow-blue-600/30 hover:bg-[#3B82F6]'
+                          : 'cursor-not-allowed bg-[#1B1E28] text-zinc-500'
+                      }`}
+                    >
+                      <ArrowUp size={19} weight="bold" />
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -605,10 +621,10 @@ export function InputDock({
         </div>
       </div>
 
-      {/* Rich '+' Action Bottom Sheet */}
+      {/* Clean Public-Ready '+' Action Bottom Sheet (Zero Developer-Only Vault/Telegram Tools) */}
       <div
         aria-hidden={!isSheetOpen}
-        className={`fixed inset-0 z-50 flex items-end justify-center transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`fixed inset-0 z-50 flex items-end justify-center transition-opacity duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           isSheetOpen
             ? 'visible pointer-events-auto opacity-100'
             : 'invisible pointer-events-none opacity-0'
@@ -616,98 +632,59 @@ export function InputDock({
       >
         <div
           onClick={() => setIsSheetOpen(false)}
-          className="absolute inset-0 bg-[#000000]/75 backdrop-blur-sm"
+          className="absolute inset-0 bg-[#000000]/80 backdrop-blur-sm"
         />
 
         <section
           role="dialog"
           aria-modal="true"
           aria-label="Composer tools and quick actions"
-          className={`relative z-10 w-full max-w-[600px] rounded-t-3xl border border-white/[0.08] bg-[#181818] px-4 pt-3 pb-6 shadow-2xl transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] sm:mb-3 sm:rounded-3xl ${
+          className={`relative z-10 w-full max-w-[560px] rounded-t-3xl bg-[#0D0D11] px-4 pt-3 pb-6 shadow-2xl transition-[transform,opacity] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] sm:mb-3 sm:rounded-3xl ${
             isSheetOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
           }`}
         >
           {/* Drag handle */}
           <div
             aria-hidden="true"
-            className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20"
+            className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/15"
           />
 
-          {/* Top Horizontal Row of 4 Quick-Action Tiles */}
-          <div className="grid grid-cols-4 gap-2">
+          {/* Top Horizontal Row of 3 Clean User Tiles: Camera, Photos, Files */}
+          <div className="grid grid-cols-3 gap-2.5">
             <button
               type="button"
               onClick={() => cameraInputRef.current?.click()}
-              className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-[#272727] px-2 py-3 text-white hover:bg-[#313131] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl bg-[#16171E] px-2 py-3 text-white hover:bg-[#1E202B] active:scale-[0.96] transition-transform duration-150"
             >
-              <Camera size={22} weight="regular" className="text-white/90" />
-              <span className="text-xs font-medium text-white/85">Camera</span>
+              <Camera size={22} weight="regular" className="text-blue-300" />
+              <span className="text-xs font-medium text-zinc-200">Camera</span>
             </button>
 
             <button
               type="button"
               onClick={() => photosInputRef.current?.click()}
-              className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-[#272727] px-2 py-3 text-white hover:bg-[#313131] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl bg-[#16171E] px-2 py-3 text-white hover:bg-[#1E202B] active:scale-[0.96] transition-transform duration-150"
             >
-              <Images size={22} weight="regular" className="text-white/90" />
-              <span className="text-xs font-medium text-white/85">Photos</span>
+              <Images size={22} weight="regular" className="text-blue-300" />
+              <span className="text-xs font-medium text-zinc-200">Photos</span>
             </button>
 
             <button
               type="button"
               onClick={() => filesInputRef.current?.click()}
-              className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-[#272727] px-2 py-3 text-white hover:bg-[#313131] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl bg-[#16171E] px-2 py-3 text-white hover:bg-[#1E202B] active:scale-[0.96] transition-transform duration-150"
             >
-              <FileArrowUp size={22} weight="regular" className="text-white/90" />
-              <span className="text-xs font-medium text-white/85">Files</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowVaultPicker((prev) => !prev)}
-              aria-expanded={showVaultPicker}
-              className={`flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-3 text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                showVaultPicker
-                  ? 'border-white/20 bg-[#313131]'
-                  : 'border-white/[0.08] bg-[#272727] hover:bg-[#313131]'
-              }`}
-            >
-              <Vault size={22} weight="regular" className="text-white/90" />
-              <span className="text-xs font-medium text-white/85">Vault</span>
+              <FileArrowUp size={22} weight="regular" className="text-blue-300" />
+              <span className="text-xs font-medium text-zinc-200">Files</span>
             </button>
           </div>
 
-          {/* Expandable Quick Vault Picker */}
-          {showVaultPicker && (
-            <div className="mt-3 space-y-1.5 rounded-2xl border border-white/[0.08] bg-[#131209] p-2">
-              <div className="px-2 py-1 font-mono text-xs text-white/50">
-                Select memory vault context
-              </div>
-              {vaults.map((vault) => (
-                <button
-                  key={vault.id}
-                  type="button"
-                  onClick={() => {
-                    onSelectVault(vault);
-                    setIsSheetOpen(false);
-                  }}
-                  className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left text-xs text-white/85 hover:bg-[#272727] hover:text-white active:scale-[0.98]"
-                >
-                  <span className="truncate font-medium">{vault.name}</span>
-                  <span className="shrink-0 font-mono text-white/45 tabular-nums">
-                    {vault.itemCount} notes
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Mid-Chat Mode & Voice Language Switcher Row */}
-          <div className="mt-3.5 flex items-center justify-between gap-2 rounded-2xl border border-white/[0.08] bg-[#1F1F1F] p-2">
+          {/* Mid-Chat Mode & Language Switcher Row */}
+          <div className="mt-3.5 flex items-center justify-between gap-2 rounded-2xl bg-[#14151C] p-2">
             <div
               role="tablist"
               aria-label="Sheet interaction mode"
-              className="relative grid flex-1 grid-cols-2 rounded-xl border border-white/[0.08] bg-[#16171E] p-1"
+              className="relative grid flex-1 grid-cols-2 rounded-xl bg-[#0B0C10] p-1"
             >
               <div
                 aria-hidden="true"
@@ -751,15 +728,15 @@ export function InputDock({
               aria-label={`Switch dictation language (current: ${
                 speechLang === 'en-US' ? 'English' : 'Bangla'
               })`}
-              className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-[#272727] px-3.5 font-mono text-xs font-medium text-white hover:bg-[#313131] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150"
+              className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-[#1C1E28] px-3.5 font-mono text-xs font-medium text-white hover:bg-[#252836] active:scale-[0.96] transition-transform duration-150"
             >
               <Translate size={15} weight="regular" className="text-blue-400" />
               <span>{speechLang === 'en-US' ? 'EN' : 'BN'}</span>
             </button>
           </div>
 
-          {/* Vertical Interactive Tools List */}
-          <div className="mt-3 space-y-1.5">
+          {/* Vertical Clean User Tools List */}
+          <div className="mt-3 space-y-2">
             <button
               type="button"
               role="menuitemcheckbox"
@@ -768,29 +745,29 @@ export function InputDock({
                 onSelectRoutingMode(isDeepResearchOn ? 'auto' : 'deep-research');
                 setIsSheetOpen(false);
               }}
-              className={`flex min-h-[48px] w-full items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-left active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`flex min-h-[50px] w-full items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-left active:scale-[0.97] transition-colors duration-150 ${
                 isDeepResearchOn
-                  ? 'border border-white/[0.12] bg-[#272727] text-white'
-                  : 'border border-white/[0.08] bg-[#1F1F1F] text-white/85 hover:bg-[#313131]'
+                  ? 'bg-[#1A243B] text-white'
+                  : 'bg-[#14151C] text-zinc-200 hover:bg-[#1C1E28]'
               }`}
             >
               <span className="flex min-w-0 items-center gap-3">
                 <GlobeHemisphereWest
                   size={19}
                   weight="regular"
-                  className="shrink-0 text-white/80"
+                  className="shrink-0 text-blue-300"
                 />
                 <span className="min-w-0">
                   <span className="block text-sm font-medium text-white">
                     Deep Research
                   </span>
-                  <span className="block text-xs text-white/50">
+                  <span className="block text-xs text-zinc-400">
                     Live web verification &amp; rich visuals
                   </span>
                 </span>
               </span>
               {isDeepResearchOn && (
-                <Check size={16} weight="bold" className="shrink-0 text-[#60A5FA]" />
+                <Check size={16} weight="bold" className="shrink-0 text-blue-400" />
               )}
             </button>
 
@@ -798,105 +775,38 @@ export function InputDock({
               type="button"
               role="menuitemcheckbox"
               aria-checked={activeTools.createImage}
+              disabled={hasAttachedImage}
               onClick={() => {
                 onToggleCreateImage();
                 setIsSheetOpen(false);
               }}
-              className={`flex min-h-[48px] w-full items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-left active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`flex min-h-[50px] w-full items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-left active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-45 transition-colors duration-150 ${
                 activeTools.createImage
-                  ? 'border border-white/[0.12] bg-[#272727] text-white'
-                  : 'border border-white/[0.08] bg-[#1F1F1F] text-white/85 hover:bg-[#313131]'
+                  ? 'bg-[#1A243B] text-white'
+                  : 'bg-[#14151C] text-zinc-200 hover:bg-[#1C1E28]'
               }`}
             >
               <span className="flex min-w-0 items-center gap-3">
                 <ImageIcon
                   size={19}
                   weight="regular"
-                  className="shrink-0 text-white/80"
+                  className="shrink-0 text-blue-300"
                 />
                 <span className="min-w-0">
                   <span className="block text-sm font-medium text-white">
                     Create Image
                   </span>
-                  <span className="block text-xs text-white/50">
-                    Generate visuals via Pollinations Flux
+                  <span className="block text-xs text-zinc-400">
+                    {hasAttachedImage
+                      ? 'Disabled while analyzing attached image'
+                      : 'Generate visuals via Pollinations Flux'}
                   </span>
                 </span>
               </span>
               {activeTools.createImage && (
-                <Check size={16} weight="bold" className="shrink-0 text-[#60A5FA]" />
+                <Check size={16} weight="bold" className="shrink-0 text-blue-400" />
               )}
             </button>
-
-            <button
-              type="button"
-              role="menuitemcheckbox"
-              aria-checked={activeTools.generatePdf}
-              onClick={() => {
-                onToggleGeneratePdf();
-                setIsSheetOpen(false);
-              }}
-              className={`flex min-h-[48px] w-full items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-left active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                activeTools.generatePdf
-                  ? 'border border-white/[0.12] bg-[#272727] text-white'
-                  : 'border border-white/[0.08] bg-[#1F1F1F] text-white/85 hover:bg-[#313131]'
-              }`}
-            >
-              <span className="flex min-w-0 items-center gap-3">
-                <FilePdf
-                  size={19}
-                  weight="regular"
-                  className="shrink-0 text-white/80"
-                />
-                <span className="min-w-0">
-                  <span className="block text-sm font-medium text-white">
-                    Generate PDF to Telegram
-                  </span>
-                  <span className="block text-xs text-white/50">
-                    Compile and deliver brief to your vault
-                  </span>
-                </span>
-              </span>
-              {activeTools.generatePdf && (
-                <Check size={16} weight="bold" className="shrink-0 text-[#60A5FA]" />
-              )}
-            </button>
-
-            {/* Bottom Personal Intelligence switch toggle */}
-            <div className="flex min-h-[52px] w-full items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-[#131209] px-3.5 py-2.5">
-              <div className="flex min-w-0 items-center gap-3">
-                <Brain
-                  size={19}
-                  weight="regular"
-                  className="shrink-0 text-white/80"
-                />
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-white">
-                    Personal Intelligence
-                  </div>
-                  <div className="text-xs text-white/50">
-                    Include core profile memory in replies
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isPersonalIntelligenceEnabled}
-                aria-label="Toggle Personal Intelligence"
-                onClick={onTogglePersonalIntelligence}
-                className={`relative flex h-7 w-12 shrink-0 items-center rounded-full border border-white/[0.14] p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                  isPersonalIntelligenceEnabled ? 'bg-[#2563EB]' : 'bg-[#272727]'
-                }`}
-              >
-                <span
-                  className={`h-5 w-5 rounded-full bg-white transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                    isPersonalIntelligenceEnabled ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
           </div>
         </section>
       </div>

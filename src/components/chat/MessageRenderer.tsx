@@ -10,31 +10,21 @@ import {
   Copy,
   DotsThree,
   DownloadSimple,
-  FilePdf,
   GitBranch,
   Globe,
   Image as ImageIcon,
   Info,
-  PaperPlaneTilt,
-  Vault,
-  WarningCircle,
   X,
 } from '@phosphor-icons/react';
 import type {
+  EngineMode,
   GeneratedImageArtifact,
   MediaCard,
-  PdfVaultInfo,
   PersonaId,
   RoutingModeId,
   SourceItem,
 } from '../../types/onyx';
-import {
-  FRIENDLY_ENGINE_ERROR_MESSAGE,
-  extractErrorDiagnostic,
-  extractPdfMessageId,
-  formatDownloadFilename,
-  isBackendEngineError,
-} from '../../lib/artifacts';
+import { formatDownloadFilename } from '../../lib/artifacts';
 import {
   getPersonaOption,
   getRoutingModeOption,
@@ -47,18 +37,17 @@ interface MessageRendererProps {
   content: string;
   mode: RoutingModeId;
   persona: PersonaId;
+  engine?: EngineMode;
   timestamp: string;
   thinkingLog?: string;
   thinkingDuration?: string;
   mediaCards?: MediaCard[];
   sources?: SourceItem[];
-  pdfVault?: PdfVaultInfo | null;
   generatedImage?: GeneratedImageArtifact;
   shouldAnimateReveal?: boolean;
+  isStreamingLive?: boolean;
   onRegenerate?: () => void;
-  onSaveToVault?: () => void;
   onBranchChat?: () => void;
-  onExportPdf?: () => void;
 }
 
 interface LightboxState {
@@ -123,52 +112,6 @@ async function triggerImageDownload(url: string, label: string): Promise<void> {
   document.body.removeChild(fallbackAnchor);
 }
 
-export function OnyxErrorCard({
-  onRetry,
-  message = FRIENDLY_ENGINE_ERROR_MESSAGE,
-  diagnostic,
-}: {
-  onRetry?: () => void;
-  message?: string;
-  diagnostic?: string;
-}) {
-  return (
-    <div
-      role="alert"
-      className="flex flex-col gap-3 rounded-2xl border border-red-500/25 bg-[#1C1214] p-4 sm:flex-row sm:items-center sm:justify-between onyx-fade-up"
-    >
-      <div className="flex min-w-0 items-start gap-3">
-        <WarningCircle
-          size={19}
-          weight="regular"
-          className="mt-0.5 shrink-0 text-red-400"
-        />
-        <div className="min-w-0 space-y-1">
-          <p className="font-sans text-sm leading-relaxed text-red-100/90 text-pretty">
-            {message}
-          </p>
-          {diagnostic && (
-            <p className="break-words font-mono text-[11px] leading-snug text-red-200/50">
-              {diagnostic}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {onRetry && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-red-400/25 bg-red-500/15 px-4 font-sans text-xs font-medium text-red-100 hover:bg-red-500/25 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50 transition-transform duration-150"
-        >
-          <ArrowClockwise size={14} weight="bold" />
-          <span>Retry</span>
-        </button>
-      )}
-    </div>
-  );
-}
-
 export function OnyxThinkingPulse({
   statusLabel,
   modeLabel,
@@ -184,16 +127,30 @@ export function OnyxThinkingPulse({
       aria-label={statusLabel}
       className="space-y-2.5 onyx-fade-up"
     >
-      <div className="flex items-center gap-1.5 font-mono text-xs text-white/50">
-        <span className="font-medium text-white/80">{modeLabel}</span>
+      <div className="flex items-center gap-1.5 font-mono text-xs text-zinc-500">
+        <span className="font-medium text-zinc-300">{modeLabel}</span>
         <span aria-hidden="true">·</span>
         <span>{personaName}</span>
       </div>
 
-      <div className="inline-flex items-center gap-3 rounded-2xl border border-blue-400/20 bg-[#12141C] px-3.5 py-2.5">
+      <div className="inline-flex items-center gap-3 rounded-2xl bg-[#10121A] px-3.5 py-2.5">
         <OnyxOrb size="mini" animate />
-        <span className="font-mono text-xs font-medium text-blue-100/85 onyx-status-shimmer">
+        <span className="font-sans text-xs font-medium text-blue-100/90 onyx-status-shimmer">
           {statusLabel}
+        </span>
+        <span aria-hidden="true" className="flex items-center gap-1 pl-0.5">
+          <span
+            style={{ animationDelay: '0ms' }}
+            className="h-1.5 w-1.5 rounded-full bg-blue-400 onyx-typing-dot"
+          />
+          <span
+            style={{ animationDelay: '150ms' }}
+            className="h-1.5 w-1.5 rounded-full bg-blue-300 onyx-typing-dot"
+          />
+          <span
+            style={{ animationDelay: '300ms' }}
+            className="h-1.5 w-1.5 rounded-full bg-sky-300 onyx-typing-dot"
+          />
         </span>
       </div>
     </div>
@@ -210,24 +167,24 @@ function ThinkingAuditAccordion({
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#131209] p-2">
+    <div className="rounded-2xl bg-[#111116] p-1.5">
       <button
         type="button"
         onClick={() => setIsExpanded((prev) => !prev)}
         aria-expanded={isExpanded}
-        className="flex min-h-[40px] w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-white/80 hover:bg-[#272727] hover:text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        className="flex min-h-[38px] w-full items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-left text-xs text-zinc-300 hover:bg-white/[0.05] hover:text-white active:scale-[0.98] transition-colors duration-150"
       >
         <span className="flex min-w-0 items-center gap-2">
-          <Brain size={15} weight="regular" className="shrink-0 text-white/75" />
-          <span className="truncate font-medium text-white/90">
-            View Multi-Agent Thinking &amp; Audit
+          <Brain size={15} weight="regular" className="shrink-0 text-blue-400" />
+          <span className="truncate font-medium text-zinc-200">
+            View Reasoning Log
           </span>
           {duration && (
             <>
-              <span aria-hidden="true" className="text-white/35">
+              <span aria-hidden="true" className="text-zinc-600">
                 ·
               </span>
-              <span className="shrink-0 font-mono text-white/50 tabular-nums">
+              <span className="shrink-0 font-mono text-zinc-500 tabular-nums">
                 {duration}
               </span>
             </>
@@ -236,15 +193,15 @@ function ThinkingAuditAccordion({
         <CaretDown
           size={13}
           weight="bold"
-          className={`shrink-0 text-white/55 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          className={`shrink-0 text-zinc-500 transition-transform duration-200 ${
             isExpanded ? 'rotate-180' : 'rotate-0'
           }`}
         />
       </button>
 
       {isExpanded && (
-        <div className="mt-1.5 rounded-xl border border-white/[0.08] bg-[#000000]/60 p-3">
-          <pre className="m-0 whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-white/75">
+        <div className="mt-1.5 rounded-xl bg-[#07070A] p-3">
+          <pre className="m-0 whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-zinc-400">
             {thinkingLog}
           </pre>
         </div>
@@ -274,13 +231,13 @@ function GalleryCard({
         }
       }}
       aria-label={`Inspect ${title}`}
-      className="group relative w-44 shrink-0 overflow-hidden rounded-xl border border-white/[0.08] bg-[#1F1F1F] text-left hover:bg-[#272727] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:w-52"
+      className="group relative w-44 shrink-0 overflow-hidden rounded-2xl bg-[#131318] text-left hover:bg-[#1B1B22] active:scale-[0.97] transition-transform duration-150 sm:w-52"
     >
-      <div className="relative h-32 w-full bg-[#181818]">
+      <div className="relative h-32 w-full bg-[#0D0D11]">
         {src && !imgFailed ? (
           <>
             {!imgLoaded && (
-              <div className="absolute inset-0 bg-[#272727] animate-pulse" />
+              <div className="absolute inset-0 bg-[#1B1B22] animate-pulse" />
             )}
             <img
               src={src}
@@ -288,15 +245,15 @@ function GalleryCard({
               referrerPolicy="no-referrer"
               onLoad={() => setImgLoaded(true)}
               onError={() => setImgFailed(true)}
-              className={`h-full w-full object-cover transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`h-full w-full object-cover transition-opacity duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 imgLoaded ? 'opacity-100' : 'opacity-0'
               }`}
             />
           </>
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-3 text-center">
-            <ImageIcon size={20} weight="regular" className="text-white/50" />
-            <span className="truncate font-mono text-xs text-white/50">
+            <ImageIcon size={20} weight="regular" className="text-zinc-500" />
+            <span className="truncate font-mono text-xs text-zinc-500">
               {card.kind || 'Visual'}
             </span>
           </div>
@@ -309,7 +266,7 @@ function GalleryCard({
             {card.title || card.caption}
           </div>
           {card.title && card.caption && (
-            <div className="mt-0.5 truncate text-xs text-white/50">
+            <div className="mt-0.5 truncate text-xs text-zinc-400">
               {card.caption}
             </div>
           )}
@@ -334,8 +291,8 @@ function GeneratedImageCard({
     attempt === 0 ? artifact.url : `${artifact.url}&seed=${attempt}`;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#181818]">
-      <div className="relative aspect-square w-full max-h-[380px] bg-[#1F1F1F]">
+    <div className="overflow-hidden rounded-2xl bg-[#121217]">
+      <div className="relative aspect-square w-full max-h-[380px] bg-[#16161C]">
         {!loaded && !failed && (
           <div
             role="status"
@@ -343,24 +300,24 @@ function GeneratedImageCard({
             className="absolute inset-0 flex flex-col justify-between p-4 animate-pulse"
           >
             <div className="flex items-center justify-between">
-              <div className="h-3.5 w-28 rounded-md bg-[#272727]" />
-              <div className="h-3.5 w-14 rounded-md bg-[#272727]" />
+              <div className="h-3.5 w-28 rounded-md bg-white/[0.06]" />
+              <div className="h-3.5 w-14 rounded-md bg-white/[0.06]" />
             </div>
             <div className="space-y-2">
-              <div className="h-3.5 w-3/4 rounded-md bg-[#272727]" />
-              <div className="h-3.5 w-1/2 rounded-md bg-[#272727]" />
+              <div className="h-3.5 w-3/4 rounded-md bg-white/[0.06]" />
+              <div className="h-3.5 w-1/2 rounded-md bg-white/[0.06]" />
             </div>
           </div>
         )}
 
         {failed ? (
           <div className="flex h-full min-h-[220px] w-full flex-col items-center justify-center gap-3 p-6 text-center">
-            <ImageIcon size={24} weight="regular" className="text-white/50" />
+            <ImageIcon size={24} weight="regular" className="text-zinc-500" />
             <div className="space-y-1">
               <p className="text-sm font-medium text-white">
                 Image preview could not load
               </p>
-              <p className="font-mono text-xs text-white/50">
+              <p className="font-mono text-xs text-zinc-500">
                 Pollinations Flux endpoint may be busy.
               </p>
             </div>
@@ -371,9 +328,9 @@ function GeneratedImageCard({
                 setLoaded(false);
                 setAttempt((prev) => prev + 1);
               }}
-              className="flex h-9 items-center rounded-xl border border-white/[0.08] bg-[#272727] px-3.5 text-xs font-medium text-white hover:bg-[#313131] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+              className="flex h-9 items-center rounded-xl bg-white/[0.08] px-3.5 text-xs font-medium text-white hover:bg-white/[0.14] active:scale-[0.97]"
             >
-              Retry render
+              Try again
             </button>
           </div>
         ) : (
@@ -387,7 +344,7 @@ function GeneratedImageCard({
               })
             }
             aria-label="Open generated image fullscreen"
-            className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+            className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50"
           >
             <img
               src={imageSrc}
@@ -395,7 +352,7 @@ function GeneratedImageCard({
               referrerPolicy="no-referrer"
               onLoad={() => setLoaded(true)}
               onError={() => setFailed(true)}
-              className={`h-full w-full object-cover transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`h-full w-full object-cover transition-opacity duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 loaded ? 'opacity-100' : 'opacity-0'
               }`}
             />
@@ -403,20 +360,20 @@ function GeneratedImageCard({
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-3 bg-[#1F1F1F] px-3.5 py-2.5">
+      <div className="flex items-center justify-between gap-3 bg-[#15151C] px-3.5 py-2.5">
         <div className="min-w-0">
           <div className="truncate text-xs font-medium text-white">
             {artifact.prompt}
           </div>
-          <div className="mt-0.5 font-mono text-xs text-white/45">
+          <div className="mt-0.5 font-mono text-[11px] text-zinc-400">
             {loaded ? 'Flux · Ready' : failed ? 'Flux · Unavailable' : 'Flux · Rendering'}
           </div>
         </div>
 
         <button
           type="button"
-          onClick={() => triggerImageDownload(imageSrc, artifact.prompt)}
-          className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-[#272727] px-3 text-xs font-medium text-white hover:bg-[#313131] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          onClick={() => void triggerImageDownload(imageSrc, artifact.prompt)}
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-white/[0.08] px-3 text-xs font-medium text-white hover:bg-white/[0.14] active:scale-[0.96] transition-transform duration-150"
         >
           <DownloadSimple size={15} weight="bold" />
           <span>Download</span>
@@ -430,44 +387,48 @@ export function MessageRenderer({
   content,
   mode,
   persona,
+  engine = 'cloud',
   timestamp,
   thinkingLog,
   thinkingDuration,
   mediaCards,
   sources,
-  pdfVault,
   generatedImage,
   shouldAnimateReveal = false,
+  isStreamingLive = false,
   onRegenerate,
-  onSaveToVault,
   onBranchChat,
-  onExportPdf,
 }: MessageRendererProps) {
   const [lightbox, setLightbox] = useState<LightboxState | null>(null);
   const [copiedAnswer, setCopiedAnswer] = useState(false);
-  const [savedToVault, setSavedToVault] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
-  // Fast silky word-chunk reveal for newly arrived live responses
+  // Instant token-by-token streaming feel for newly arrived replies
   const [revealedContent, setRevealedContent] = useState<string>(() =>
-    shouldAnimateReveal && !isBackendEngineError(content) ? '' : content
+    shouldAnimateReveal && !isStreamingLive ? '' : content
   );
   const [isRevealDone, setIsRevealDone] = useState<boolean>(
-    () => !shouldAnimateReveal || isBackendEngineError(content)
+    () => !shouldAnimateReveal && !isStreamingLive
   );
 
   const moreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!shouldAnimateReveal || isBackendEngineError(content)) {
+    if (isStreamingLive) {
+      setRevealedContent(content);
+      setIsRevealDone(false);
+      return;
+    }
+
+    if (!shouldAnimateReveal) {
       setRevealedContent(content);
       setIsRevealDone(true);
       return;
     }
 
     const tokens = content.split(/(\s+)/);
-    if (tokens.length <= 8) {
+    if (tokens.length <= 4) {
       setRevealedContent(content);
       setIsRevealDone(true);
       return;
@@ -476,7 +437,7 @@ export function MessageRenderer({
     setRevealedContent('');
     setIsRevealDone(false);
 
-    const stepSize = Math.max(4, Math.ceil(tokens.length / 36));
+    const stepSize = Math.max(2, Math.ceil(tokens.length / 42));
     let cursor = 0;
 
     const timer = window.setInterval(() => {
@@ -488,10 +449,10 @@ export function MessageRenderer({
       } else {
         setRevealedContent(tokens.slice(0, cursor).join(''));
       }
-    }, 22);
+    }, 16);
 
     return () => window.clearInterval(timer);
-  }, [content, shouldAnimateReveal]);
+  }, [content, shouldAnimateReveal, isStreamingLive]);
 
   useEffect(() => {
     if (!lightbox) {
@@ -533,8 +494,8 @@ export function MessageRenderer({
     };
   }, [isMoreOpen]);
 
-  const pdfMessageId = extractPdfMessageId(pdfVault);
-  const modeLabel = getRoutingModeOption(mode).label;
+  const modeLabel =
+    engine === 'local' ? 'Local AI' : getRoutingModeOption(mode).label;
   const personaName = getPersonaOption(persona).name;
 
   async function handleCopyAnswer() {
@@ -545,25 +506,9 @@ export function MessageRenderer({
     }
   }
 
-  function handleSaveVaultClick() {
-    onSaveToVault?.();
-    setSavedToVault(true);
-    window.setTimeout(() => setSavedToVault(false), 2200);
-  }
-
-  // Intercept backend error text payloads cleanly with tiny diagnostic line
-  if (isBackendEngineError(content)) {
-    return (
-      <OnyxErrorCard
-        diagnostic={extractErrorDiagnostic(content)}
-        onRetry={onRegenerate}
-      />
-    );
-  }
-
   return (
     <div className="space-y-3">
-      {/* 1. Thinking & Audit Accordion */}
+      {/* 1. Reasoning Log Accordion */}
       {thinkingLog && (
         <ThinkingAuditAccordion
           thinkingLog={thinkingLog}
@@ -571,7 +516,7 @@ export function MessageRenderer({
         />
       )}
 
-      {/* 2. Rich Media Gallery (horizontally scrollable above text) */}
+      {/* 2. Rich Media Gallery */}
       {mediaCards && mediaCards.length > 0 && (
         <div
           aria-label="Media gallery"
@@ -595,10 +540,10 @@ export function MessageRenderer({
         />
       )}
 
-      {/* 4. Rich Editorial Serif Markdown Answer (Claude-style Source Serif 4) */}
+      {/* 4. Fluid Borderless Editorial Serif Markdown Answer */}
       {revealedContent && (
         <div
-          className={`min-w-0 max-w-full space-y-3.5 font-serif text-[15.5px] leading-[1.72] text-zinc-100/95 sm:text-[16.5px] ${
+          className={`min-w-0 max-w-full space-y-3.5 font-serif text-[15.5px] leading-[1.74] text-zinc-100/95 sm:text-[16.5px] ${
             shouldAnimateReveal ? 'onyx-chunk-in' : ''
           }`}
         >
@@ -621,7 +566,7 @@ export function MessageRenderer({
                 </h3>
               ),
               p: ({ children }) => (
-                <p className="font-serif text-pretty leading-[1.72] text-zinc-100/92">
+                <p className="break-words font-serif text-pretty leading-[1.74] text-zinc-100/92">
                   {children}
                 </p>
               ),
@@ -642,32 +587,34 @@ export function MessageRenderer({
                 </ol>
               ),
               li: ({ children }) => (
-                <li className="text-pretty leading-[1.7]">{children}</li>
+                <li className="break-words text-pretty leading-[1.7]">
+                  {children}
+                </li>
               ),
               a: ({ href, children }) => (
                 <a
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium text-blue-300 underline decoration-blue-300/40 underline-offset-4 hover:text-blue-200 hover:decoration-blue-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40"
+                  className="font-medium text-blue-300 underline decoration-blue-300/40 underline-offset-4 hover:text-blue-200 hover:decoration-blue-200"
                 >
                   {children}
                 </a>
               ),
               blockquote: ({ children }) => (
-                <blockquote className="rounded-2xl border border-white/[0.08] bg-[#121216] px-4 py-3 font-serif text-[15px] leading-relaxed text-zinc-300">
+                <blockquote className="rounded-2xl bg-[#111116] px-4 py-3 font-serif text-[15px] leading-relaxed text-zinc-300">
                   {children}
                 </blockquote>
               ),
               table: ({ children }) => (
-                <div className="my-3 w-full overflow-x-auto rounded-2xl border border-white/[0.08] bg-[#141418] font-sans">
+                <div className="my-3 w-full overflow-x-auto rounded-2xl bg-[#111116] font-sans">
                   <table className="w-full border-collapse text-left text-xs sm:text-sm">
                     {children}
                   </table>
                 </div>
               ),
               thead: ({ children }) => (
-                <thead className="bg-[#1F1F1F] text-white">{children}</thead>
+                <thead className="bg-[#181820] text-white">{children}</thead>
               ),
               th: ({ children }) => (
                 <th className="px-3.5 py-2.5 font-semibold whitespace-nowrap text-white/90">
@@ -675,12 +622,12 @@ export function MessageRenderer({
                 </th>
               ),
               td: ({ children }) => (
-                <td className="px-3.5 py-2.5 text-white/75 tabular-nums">
+                <td className="px-3.5 py-2.5 text-zinc-300 tabular-nums">
                   {children}
                 </td>
               ),
               tr: ({ children }) => (
-                <tr className="odd:bg-[#181818] even:bg-[#1F1F1F]/50">
+                <tr className="odd:bg-[#111116] even:bg-[#15151C]">
                   {children}
                 </tr>
               ),
@@ -695,7 +642,7 @@ export function MessageRenderer({
                 }
 
                 return (
-                  <code className="rounded-md border border-white/[0.08] bg-[#1F1F1F] px-1.5 py-0.5 font-mono text-xs text-white/90">
+                  <code className="rounded-md bg-[#181820] px-1.5 py-0.5 font-mono text-xs text-zinc-100">
                     {children}
                   </code>
                 );
@@ -704,10 +651,16 @@ export function MessageRenderer({
           >
             {revealedContent}
           </ReactMarkdown>
+          {isStreamingLive && (
+            <span
+              aria-hidden="true"
+              className="inline-block h-4 w-1.5 animate-pulse rounded-sm bg-blue-400 align-middle"
+            />
+          )}
         </div>
       )}
 
-      {/* 5. Web Source Chips (below answer) */}
+      {/* 5. Web Source Chips */}
       {sources && sources.length > 0 && (
         <div
           aria-label="Web sources"
@@ -720,22 +673,22 @@ export function MessageRenderer({
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-[36px] max-w-full items-center gap-1.5 rounded-full border border-white/[0.08] bg-[#1F1F1F] px-3 py-1.5 text-xs font-medium text-white/85 hover:bg-[#313131] hover:text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                className="inline-flex min-h-[34px] max-w-full items-center gap-1.5 rounded-full bg-[#15151C] px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-[#1F1F29] hover:text-white active:scale-[0.97] transition-transform duration-150"
               >
-                <Globe size={13} weight="regular" className="shrink-0 text-white/55" />
+                <Globe size={13} weight="regular" className="shrink-0 text-blue-400" />
                 <span className="truncate">{source.title}</span>
                 <ArrowUpRight
                   size={12}
                   weight="bold"
-                  className="shrink-0 text-white/50"
+                  className="shrink-0 text-zinc-400"
                 />
               </a>
             ) : (
               <span
                 key={`source-chip-${idx}`}
-                className="inline-flex min-h-[36px] max-w-full items-center gap-1.5 rounded-full border border-white/[0.08] bg-[#1F1F1F] px-3 py-1.5 text-xs font-medium text-white/75"
+                className="inline-flex min-h-[34px] max-w-full items-center gap-1.5 rounded-full bg-[#15151C] px-3 py-1.5 text-xs font-medium text-zinc-300"
               >
-                <Globe size={13} weight="regular" className="shrink-0 text-white/55" />
+                <Globe size={13} weight="regular" className="shrink-0 text-zinc-400" />
                 <span className="truncate">{source.title}</span>
               </span>
             )
@@ -743,42 +696,7 @@ export function MessageRenderer({
         </div>
       )}
 
-      {/* 6. Telegram PDF Vault Status Pill */}
-      {pdfVault && (
-        <div className="pt-1">
-          <div className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-white/[0.08] bg-[#131209] px-3.5 py-1.5 text-xs text-white/90">
-            <PaperPlaneTilt
-              size={14}
-              weight="regular"
-              className="shrink-0 text-white/80"
-            />
-            <span className="font-medium">PDF Saved to Telegram Vault</span>
-            {pdfMessageId && (
-              <>
-                <span aria-hidden="true" className="text-white/35">
-                  ·
-                </span>
-                <span className="font-mono text-white/65 tabular-nums">
-                  ID #{pdfMessageId}
-                </span>
-              </>
-            )}
-            {pdfVault.url && (
-              <a
-                href={pdfVault.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-mono text-xs text-white underline decoration-white/35 underline-offset-4 hover:decoration-white"
-              >
-                <span>Open</span>
-                <ArrowUpRight size={12} weight="bold" />
-              </a>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 7. Assistant Message Action Bar (fades in after reveal completes) */}
+      {/* 6. Clean Assistant Action Bar (positioned so More popover NEVER overlaps text or clips at 390px) */}
       <div
         className={`flex flex-wrap items-center gap-1 pt-1 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           isRevealDone
@@ -788,15 +706,15 @@ export function MessageRenderer({
       >
         <button
           type="button"
-          onClick={handleCopyAnswer}
+          onClick={() => void handleCopyAnswer()}
           aria-label={copiedAnswer ? 'Answer copied' : 'Copy answer'}
           title={copiedAnswer ? 'Copied' : 'Copy'}
-          className="flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs text-white/55 hover:bg-[#1F1F1F] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-transform duration-150"
+          className="flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs text-zinc-400 hover:bg-white/[0.06] hover:text-white active:scale-[0.96] transition-transform duration-150"
         >
           {copiedAnswer ? (
             <>
-              <Check size={15} weight="bold" className="text-white" />
-              <span className="text-white">Copied</span>
+              <Check size={15} weight="bold" className="text-emerald-400" />
+              <span className="text-zinc-200">Copied</span>
             </>
           ) : (
             <Copy size={16} weight="regular" />
@@ -809,36 +727,13 @@ export function MessageRenderer({
             onClick={onRegenerate}
             aria-label="Regenerate response"
             title="Regenerate"
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-white/55 hover:bg-[#1F1F1F] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-transform duration-150"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-zinc-400 hover:bg-white/[0.06] hover:text-white active:scale-[0.96] transition-transform duration-150"
           >
             <ArrowClockwise size={16} weight="regular" />
           </button>
         )}
 
-        {onSaveToVault && (
-          <button
-            type="button"
-            onClick={handleSaveVaultClick}
-            aria-label={savedToVault ? 'Saved to vault' : 'Save to vault'}
-            title="Save to Vault"
-            className={`flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-              savedToVault
-                ? 'border border-white/[0.12] bg-[#131209] text-white'
-                : 'text-white/55 hover:bg-[#1F1F1F] hover:text-white'
-            }`}
-          >
-            {savedToVault ? (
-              <>
-                <Check size={15} weight="bold" />
-                <span>Saved</span>
-              </>
-            ) : (
-              <Vault size={16} weight="regular" />
-            )}
-          </button>
-        )}
-
-        {/* More (...) compact dark menu */}
+        {/* More (...) menu anchored cleanly above-left so it never clips off-screen or covers text */}
         <div ref={moreRef} className="relative">
           <button
             type="button"
@@ -847,10 +742,10 @@ export function MessageRenderer({
             aria-expanded={isMoreOpen}
             aria-haspopup="menu"
             title="More"
-            className={`flex h-9 w-9 items-center justify-center rounded-xl active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            className={`flex h-9 w-9 items-center justify-center rounded-xl active:scale-[0.96] transition-colors duration-150 ${
               isMoreOpen
-                ? 'border border-white/[0.08] bg-[#272727] text-white'
-                : 'text-white/55 hover:bg-[#1F1F1F] hover:text-white'
+                ? 'bg-white/[0.1] text-white'
+                : 'text-zinc-400 hover:bg-white/[0.06] hover:text-white'
             }`}
           >
             <DotsThree size={19} weight="bold" />
@@ -860,10 +755,10 @@ export function MessageRenderer({
             role="menu"
             aria-label="Additional response actions"
             aria-hidden={!isMoreOpen}
-            className={`absolute right-0 bottom-11 z-30 w-52 rounded-2xl border border-white/[0.08] bg-[#1F1F1F] p-1.5 shadow-2xl transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            className={`absolute left-0 top-10 z-40 min-w-[196px] rounded-2xl bg-[#14141C] p-1.5 shadow-2xl transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
               isMoreOpen
                 ? 'visible pointer-events-auto translate-y-0 scale-100 opacity-100'
-                : 'invisible pointer-events-none translate-y-1 scale-95 opacity-0'
+                : 'invisible pointer-events-none -translate-y-1 scale-95 opacity-0'
             }`}
           >
             {onBranchChat && (
@@ -874,25 +769,10 @@ export function MessageRenderer({
                   setIsMoreOpen(false);
                   onBranchChat();
                 }}
-                className="flex min-h-[40px] w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-medium text-white/85 hover:bg-[#313131] hover:text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+                className="flex min-h-[38px] w-full items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2 text-left text-xs font-medium text-zinc-200 hover:bg-white/[0.08] hover:text-white active:scale-[0.97]"
               >
-                <GitBranch size={15} weight="regular" className="shrink-0 text-white/65" />
+                <GitBranch size={15} weight="regular" className="shrink-0 text-blue-400" />
                 <span>Branch in new chat</span>
-              </button>
-            )}
-
-            {onExportPdf && (
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setIsMoreOpen(false);
-                  onExportPdf();
-                }}
-                className="flex min-h-[40px] w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-medium text-white/85 hover:bg-[#313131] hover:text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-              >
-                <FilePdf size={15} weight="regular" className="shrink-0 text-white/65" />
-                <span>Export PDF</span>
               </button>
             )}
 
@@ -903,9 +783,9 @@ export function MessageRenderer({
                 setShowDetails((prev) => !prev);
                 setIsMoreOpen(false);
               }}
-              className="flex min-h-[40px] w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-medium text-white/85 hover:bg-[#313131] hover:text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+              className="flex min-h-[38px] w-full items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2 text-left text-xs font-medium text-zinc-200 hover:bg-white/[0.08] hover:text-white active:scale-[0.97]"
             >
-              <Info size={15} weight="regular" className="shrink-0 text-white/65" />
+              <Info size={15} weight="regular" className="shrink-0 text-zinc-400" />
               <span>Response details</span>
             </button>
           </div>
@@ -914,9 +794,9 @@ export function MessageRenderer({
 
       {/* Expandable Response Details panel */}
       {showDetails && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/[0.08] bg-[#181818] px-3.5 py-2.5 font-mono text-xs text-white/65">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-[#111116] px-3.5 py-2.5 font-mono text-xs text-zinc-400">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="text-white/90">{modeLabel}</span>
+            <span className="text-zinc-200">{modeLabel}</span>
             <span aria-hidden="true">·</span>
             <span>Persona: {personaName}</span>
             {timestamp && (
@@ -930,17 +810,17 @@ export function MessageRenderer({
             type="button"
             onClick={() => setShowDetails(false)}
             aria-label="Close response details"
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-white/50 hover:bg-[#313131] hover:text-white"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-white/[0.08] hover:text-white"
           >
             <X size={13} weight="bold" />
           </button>
         </div>
       )}
 
-      {/* Fullscreen Lightbox Modal for Media Gallery & Generated Images */}
+      {/* Fullscreen Lightbox Modal */}
       <div
         aria-hidden={!lightbox}
-        className={`fixed inset-0 z-50 flex items-center justify-center p-3 transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] sm:p-6 ${
+        className={`fixed inset-0 z-50 flex items-center justify-center p-3 transition-opacity duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] sm:p-6 ${
           lightbox
             ? 'visible pointer-events-auto opacity-100'
             : 'invisible pointer-events-none opacity-0'
@@ -956,15 +836,15 @@ export function MessageRenderer({
             role="dialog"
             aria-modal="true"
             aria-label={lightbox.title}
-            className="relative z-10 flex max-h-[90dvh] w-full max-w-[820px] flex-col overflow-hidden rounded-3xl border border-white/[0.08] bg-[#181818] p-2 shadow-2xl"
+            className="relative z-10 flex max-h-[90dvh] w-full max-w-[820px] flex-col overflow-hidden rounded-3xl bg-[#111116] p-2 shadow-2xl"
           >
-            <div className="flex items-center justify-between gap-3 rounded-2xl bg-[#1F1F1F] px-4 py-2.5">
+            <div className="flex items-center justify-between gap-3 rounded-2xl bg-[#17171F] px-4 py-2.5">
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-white">
                   {lightbox.title}
                 </div>
                 {lightbox.caption && (
-                  <div className="truncate text-xs text-white/55">
+                  <div className="truncate text-xs text-zinc-400">
                     {lightbox.caption}
                   </div>
                 )}
@@ -974,9 +854,9 @@ export function MessageRenderer({
                 <button
                   type="button"
                   onClick={() =>
-                    triggerImageDownload(lightbox.url, lightbox.title)
+                    void triggerImageDownload(lightbox.url, lightbox.title)
                   }
-                  className="flex h-9 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-[#272727] px-3 text-xs font-medium text-white hover:bg-[#313131] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+                  className="flex h-9 items-center gap-1.5 rounded-xl bg-white/[0.08] px-3 text-xs font-medium text-white hover:bg-white/[0.14] active:scale-[0.96]"
                 >
                   <DownloadSimple size={15} weight="bold" />
                   <span>Download</span>
@@ -985,14 +865,14 @@ export function MessageRenderer({
                   type="button"
                   onClick={() => setLightbox(null)}
                   aria-label="Close image viewer"
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-[#272727] text-white/80 hover:bg-[#313131] hover:text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.08] text-zinc-300 hover:bg-white/[0.14] hover:text-white active:scale-[0.96]"
                 >
                   <X size={16} weight="regular" />
                 </button>
               </div>
             </div>
 
-            <div className="mt-2 flex flex-1 items-center justify-center overflow-hidden rounded-2xl border border-white/[0.08] bg-[#000000] p-2">
+            <div className="mt-2 flex flex-1 items-center justify-center overflow-hidden rounded-2xl bg-[#000000] p-2">
               <img
                 src={lightbox.url}
                 alt={lightbox.title}

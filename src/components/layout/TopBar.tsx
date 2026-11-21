@@ -4,6 +4,7 @@ import {
   CaretDown,
   Check,
   Compass,
+  Cpu,
   Detective,
   GlobeHemisphereWest,
   Lightning,
@@ -11,7 +12,7 @@ import {
   UserCircle,
   X,
 } from '@phosphor-icons/react';
-import type { PersonaId, RoutingModeId } from '../../types/onyx';
+import type { EngineMode, PersonaId, RoutingModeId } from '../../types/onyx';
 import {
   PERSONAS,
   ROUTING_MODES,
@@ -22,6 +23,9 @@ import {
 interface TopBarProps {
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
+  engineMode: EngineMode;
+  onChangeEngineMode: (mode: EngineMode) => void;
+  onOpenLocalAIHub: () => void;
   routingMode: RoutingModeId;
   onSelectRoutingMode: (mode: RoutingModeId) => void;
   persona: PersonaId;
@@ -35,21 +39,24 @@ interface TopBarProps {
 function ModeIcon({ id }: { id: RoutingModeId }) {
   switch (id) {
     case 'auto':
-      return <Compass size={18} weight="regular" className="shrink-0 text-white/80" />;
+      return <Compass size={17} weight="regular" className="shrink-0 text-zinc-300" />;
     case 'flash':
-      return <Lightning size={18} weight="regular" className="shrink-0 text-white/80" />;
+      return <Lightning size={17} weight="regular" className="shrink-0 text-zinc-300" />;
     case 'deep-research':
       return (
-        <GlobeHemisphereWest size={18} weight="regular" className="shrink-0 text-white/80" />
+        <GlobeHemisphereWest size={17} weight="regular" className="shrink-0 text-zinc-300" />
       );
     case 'deep-think':
-      return <Brain size={18} weight="regular" className="shrink-0 text-white/80" />;
+      return <Brain size={17} weight="regular" className="shrink-0 text-zinc-300" />;
   }
 }
 
 export function TopBar({
   isSidebarOpen,
   onToggleSidebar,
+  engineMode,
+  onChangeEngineMode,
+  onOpenLocalAIHub,
   routingMode,
   onSelectRoutingMode,
   persona,
@@ -92,28 +99,23 @@ export function TopBar({
   }, [isDropdownOpen]);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 px-3 pt-3 sm:px-4 pointer-events-none">
-      {/* Flat top-edge mask preventing scrolled content from peeking above the floating bar */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed top-0 right-0 left-0 h-3 bg-[#000000]"
-      />
+    <header className="fixed top-0 right-0 left-0 z-30 bg-[#000000]/85 px-3 py-2.5 backdrop-blur-md sm:px-4">
       <div
         ref={dropdownRef}
-        className="pointer-events-auto relative mx-auto grid w-full max-w-[760px] grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl border border-white/[0.08] bg-[#181818]/80 p-1 backdrop-blur-xl"
+        className="relative mx-auto grid w-full max-w-[760px] grid-cols-[1fr_auto_1fr] items-center gap-2"
       >
-        {/* Left: Animated menu toggle button */}
+        {/* Left: Minimal Animated Sidebar Toggle */}
         <div className="flex items-center justify-start">
           <button
             type="button"
             onClick={onToggleSidebar}
             aria-label={isSidebarOpen ? 'Close navigation sidebar' : 'Open navigation sidebar'}
             aria-expanded={isSidebarOpen}
-            className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white/85 hover:bg-[#313131] hover:text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-zinc-300 hover:bg-white/[0.07] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150"
           >
             <span
               aria-hidden="true"
-              className={`absolute flex items-center justify-center transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`absolute flex items-center justify-center transition-[transform,opacity] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 isSidebarOpen ? 'scale-75 opacity-0' : 'scale-100 opacity-100'
               }`}
             >
@@ -121,7 +123,7 @@ export function TopBar({
             </span>
             <span
               aria-hidden="true"
-              className={`absolute flex items-center justify-center transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`absolute flex items-center justify-center transition-[transform,opacity] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 isSidebarOpen ? 'scale-100 opacity-100' : 'scale-75 opacity-0'
               }`}
             >
@@ -130,67 +132,73 @@ export function TopBar({
           </button>
         </div>
 
-        {/* Center: Onyx Routing Mode Trigger */}
+        {/* Center: Seamless Model / Engine Switcher Trigger */}
         <div className="flex min-w-0 justify-center">
           <button
             type="button"
             onClick={() => setIsDropdownOpen((prev) => !prev)}
             aria-expanded={isDropdownOpen}
             aria-haspopup="menu"
-            className="flex h-11 max-w-[190px] items-center gap-1.5 rounded-xl px-2.5 text-sm font-semibold text-white hover:bg-[#313131] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:max-w-none sm:px-3"
+            className="flex h-10 max-w-[210px] items-center gap-1.5 rounded-full px-3.5 text-sm font-medium text-white hover:bg-white/[0.07] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150 sm:max-w-none"
           >
-            <span className="truncate whitespace-nowrap">{activeMode.label}</span>
+            {engineMode === 'local' && (
+              <Cpu size={15} weight="fill" className="shrink-0 text-blue-400" />
+            )}
+            <span className="truncate whitespace-nowrap">
+              {engineMode === 'local' ? 'Local AI' : activeMode.label}
+            </span>
             <CaretDown
-              size={14}
+              size={13}
               weight="bold"
-              className={`shrink-0 text-white/60 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`shrink-0 text-zinc-400 transition-transform duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 isDropdownOpen ? 'rotate-180' : 'rotate-0'
               }`}
             />
           </button>
         </div>
 
-        {/* Right: Temporary Chat toggle + Profile avatar */}
-        <div className="flex shrink-0 items-center justify-end gap-1">
+        {/* Right: Temporary Chat + Profile Avatar */}
+        <div className="flex shrink-0 items-center justify-end gap-1.5">
           <button
             type="button"
             onClick={onToggleTemporaryChat}
             aria-label={isTemporaryChat ? 'Disable temporary chat' : 'Enable temporary chat'}
             aria-pressed={isTemporaryChat}
             title={isTemporaryChat ? 'Temporary chat active' : 'Temporary chat'}
-            className={`flex h-11 w-11 items-center justify-center rounded-xl active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            className={`flex h-10 w-10 items-center justify-center rounded-full active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150 ${
               isTemporaryChat
-                ? 'border border-white/[0.16] bg-[#272727] text-white'
-                : 'text-white/70 hover:bg-[#313131] hover:text-white'
+                ? 'bg-blue-500/20 text-blue-200'
+                : 'text-zinc-400 hover:bg-white/[0.07] hover:text-white'
             }`}
           >
-            <Detective size={19} weight={isTemporaryChat ? 'fill' : 'regular'} />
+            <Detective size={18} weight={isTemporaryChat ? 'fill' : 'regular'} />
           </button>
 
           <button
             type="button"
             onClick={onOpenSettings}
             aria-label="Open settings and profile"
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.08] bg-[#272727] text-xs font-mono font-medium text-white hover:bg-[#313131] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#18181F] font-mono text-xs font-medium text-zinc-200 hover:bg-[#23232D] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150"
           >
             {userInitials}
           </button>
         </div>
 
-        {/* Floating Routing Mode Menu centered to the TopBar */}
+        {/* Floating Model & Local AI Switcher Menu */}
         <div
           role="menu"
-          aria-label="Onyx routing mode and persona"
+          aria-label="Onyx engine and routing mode"
           aria-hidden={!isDropdownOpen}
-          className={`absolute top-15 left-1/2 z-40 w-[min(320px,calc(100vw-24px))] -translate-x-1/2 rounded-2xl border border-white/[0.08] bg-[#1F1F1F] p-2 shadow-2xl transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          className={`absolute top-13 left-1/2 z-40 w-[min(320px,calc(100vw-24px))] -translate-x-1/2 rounded-2xl bg-[#121217] p-2 shadow-2xl transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
             isDropdownOpen
               ? 'visible pointer-events-auto translate-y-0 scale-100 opacity-100'
               : 'invisible pointer-events-none -translate-y-2 scale-95 opacity-0'
           }`}
         >
-          <div className="space-y-1">
+          {/* Cloud Routing Modes */}
+          <div className="space-y-0.5">
             {ROUTING_MODES.map((mode) => {
-              const isSelected = mode.id === routingMode;
+              const isSelected = engineMode === 'cloud' && mode.id === routingMode;
               return (
                 <button
                   key={mode.id}
@@ -198,13 +206,14 @@ export function TopBar({
                   role="menuitemradio"
                   aria-checked={isSelected}
                   onClick={() => {
+                    onChangeEngineMode('cloud');
                     onSelectRoutingMode(mode.id);
                     setIsDropdownOpen(false);
                   }}
-                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 transition-colors duration-150 ${
                     isSelected
-                      ? 'border border-white/[0.08] bg-[#272727] text-white'
-                      : 'text-white/85 hover:bg-[#313131]'
+                      ? 'bg-white/[0.09] text-white'
+                      : 'text-zinc-300 hover:bg-white/[0.05] hover:text-white'
                   }`}
                 >
                   <div className="flex min-w-0 items-center gap-2.5">
@@ -213,64 +222,99 @@ export function TopBar({
                       <div className="truncate text-sm font-medium text-white">
                         {mode.shortLabel}
                       </div>
-                      <div className="truncate text-xs text-white/55">
+                      <div className="truncate text-xs text-zinc-400">
                         {mode.description}
                       </div>
                     </div>
                   </div>
                   {isSelected && (
-                    <Check size={16} weight="bold" className="shrink-0 text-white" />
+                    <Check size={15} weight="bold" className="shrink-0 text-blue-400" />
                   )}
                 </button>
               );
             })}
           </div>
 
-          {/* Expandable Persona Selector */}
-          <div className="mt-2 rounded-xl border border-white/[0.08] bg-[#181818] p-1">
+          {/* Dedicated Local AI Engine Option */}
+          <div className="mt-2 pt-2 border-t border-white/[0.06]">
+            <button
+              type="button"
+              role="menuitemradio"
+              aria-checked={engineMode === 'local'}
+              onClick={() => {
+                setIsDropdownOpen(false);
+                onOpenLocalAIHub();
+              }}
+              className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 transition-colors duration-150 ${
+                engineMode === 'local'
+                  ? 'bg-[#2563EB]/20 text-white'
+                  : 'text-zinc-300 hover:bg-white/[0.05] hover:text-white'
+              }`}
+            >
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Cpu size={17} weight="regular" className="shrink-0 text-blue-400" />
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-white">
+                    Local AI &amp; GGUF Hub
+                  </div>
+                  <div className="truncate text-xs text-zinc-400">
+                    On-device llama.cpp / PocketPal
+                  </div>
+                </div>
+              </div>
+              {engineMode === 'local' ? (
+                <Check size={15} weight="bold" className="shrink-0 text-blue-400" />
+              ) : (
+                <span className="shrink-0 rounded-full bg-white/[0.06] px-2 py-0.5 font-mono text-[10px] text-zinc-400">
+                  Hub
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Compact Persona Switcher */}
+          <div className="mt-1.5 rounded-xl bg-[#0B0B0F] p-1">
             <button
               type="button"
               onClick={() => setIsPersonaExpanded((prev) => !prev)}
               aria-expanded={isPersonaExpanded}
-              className="flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-white/80 hover:bg-[#313131] hover:text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              className="flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-zinc-300 hover:bg-white/[0.05] hover:text-white active:scale-[0.98]"
             >
               <span className="flex items-center gap-2 truncate">
-                <UserCircle size={16} weight="regular" className="shrink-0 text-white/65" />
-                <span className="font-medium text-white/70">Persona</span>
-                <span aria-hidden="true" className="text-white/35">
+                <UserCircle size={15} weight="regular" className="shrink-0 text-zinc-400" />
+                <span className="text-zinc-400">Persona</span>
+                <span aria-hidden="true" className="text-zinc-600">
                   ·
                 </span>
                 <span className="font-mono text-white">{activePersona.name}</span>
               </span>
               <CaretDown
-                size={14}
+                size={13}
                 weight="bold"
-                className={`shrink-0 text-white/55 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                className={`shrink-0 text-zinc-500 transition-transform duration-200 ${
                   isPersonaExpanded ? 'rotate-180' : 'rotate-0'
                 }`}
               />
             </button>
 
             {isPersonaExpanded && (
-              <div className="mt-1 grid grid-cols-2 gap-1 pt-1">
+              <div className="mt-1 grid grid-cols-2 gap-1 pt-0.5">
                 {PERSONAS.map((option) => {
                   const isSelected = option.id === persona;
                   return (
                     <button
                       key={option.id}
                       type="button"
-                      onClick={() => {
-                        onSelectPersona(option.id);
-                      }}
-                      className={`flex items-center justify-between gap-1.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                      onClick={() => onSelectPersona(option.id)}
+                      className={`flex items-center justify-between gap-1.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium active:scale-[0.97] ${
                         isSelected
-                          ? 'border border-white/[0.08] bg-[#272727] text-white'
-                          : 'text-white/70 hover:bg-[#313131] hover:text-white'
+                          ? 'bg-[#2563EB]/20 text-white'
+                          : 'text-zinc-400 hover:bg-white/[0.05] hover:text-white'
                       }`}
                     >
                       <span className="truncate">{option.name}</span>
                       {isSelected && (
-                        <Check size={13} weight="bold" className="shrink-0 text-white" />
+                        <Check size={12} weight="bold" className="shrink-0 text-blue-400" />
                       )}
                     </button>
                   );

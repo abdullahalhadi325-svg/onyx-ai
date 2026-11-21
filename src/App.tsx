@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
+import { Megaphone, X } from '@phosphor-icons/react';
 import { AuthScreen } from './components/auth/AuthScreen';
 import {
   BootSplash,
@@ -8,40 +9,67 @@ import {
 import { TopBar } from './components/layout/TopBar';
 import { Sidebar } from './components/layout/Sidebar';
 import { SettingsSheet } from './components/layout/SettingsSheet';
+import { LocalAIHubSheet } from './components/local/LocalAIHubSheet';
 import { HomeView } from './components/chat/HomeView';
 import { ChatThread } from './components/chat/ChatThread';
 import { InputDock } from './components/input/InputDock';
 import {
-  OnyxBackendError,
   buildChatRequestPayload,
-  sendChatToBackend,
+  sendChatToLocalServer,
+  sendChatWithSilentFailover,
 } from './lib/api';
 import {
+  DEFAULT_ADMIN_CONFIG,
+  fetchLiveAdminConfig,
+} from './lib/adminConfig';
+import {
   type SpeechLanguageCode,
-  FRIENDLY_ENGINE_ERROR_MESSAGE,
+  buildGracefulFallbackReply,
   buildPollinationsImageUrl,
   createBranchedMessages,
-  extractErrorDiagnostic,
 } from './lib/artifacts';
+import {
+  generateWithNativeLocalLLM,
+  getNativeDownloadedModels,
+  isNativeLocalLLMAvailable,
+  loadNativeModel,
+  stopNativeGeneration,
+} from './lib/localLLM';
+import {
+  DEFAULT_LOCAL_SERVER_CONFIG,
+  type PersistedWorkspaceSnapshot,
+  loadPersistedWorkspace,
+  savePersistedWorkspace,
+  savePersistedWorkspaceSyncBackup,
+} from './lib/storage';
 import {
   deriveUserProfile,
   fetchUserChats,
   saveActiveChatMessage,
   supabase,
 } from './lib/supabase';
+import {
+  createInitialUsageStats,
+  estimateTokenCount,
+  recordMessageUsage,
+  rolloverUsageIfNewDay,
+} from './lib/usage';
 import type {
   ActiveTools,
+  AdminConfig,
   ChatMessage,
   ChatSession,
+  EngineMode,
+  ImageAttachmentPayload,
   InputMode,
-  MemoryVault,
-  PendingChatError,
+  LocalServerConfig,
+  LocalServerStatus,
   PersonaId,
+  ResponseTone,
   RoutingModeId,
+  UsageStats,
 } from './types/onyx';
 import {
-  INITIAL_CHATS,
-  INITIAL_MEMORY_VAULTS,
   deriveChatTitle,
   formatCurrentTime,
   toggleTaskStepInMessages,
@@ -75,6 +103,26 @@ function deriveGreetingFirstName(
   return firstWord || 'Hadi';
 }
 
+function mergeRemoteAndLocalChats(
+  localChats: ChatSession[],
+  remoteChats: ChatSession[]
+): ChatSession[] {
+  if (remoteChats.length === 0) {
+    return localChats;
+  }
+  const byId = new Map<string, ChatSession>();
+  for (const chat of remoteChats) {
+    byId.set(chat.id, chat);
+  }
+  for (const chat of localChats) {
+    const remote = byId.get(chat.id);
+    if (!remote || chat.messages.length >= remote.messages.length) {
+      byId.set(chat.id, chat);
+    }
+  }
+  return Array.from(byId.values());
+}
+
 export default function App() {
   // Authentication state (persisted via Supabase persistSession: true)
   const [authReady, setAuthReady] = useState(false);
@@ -102,18 +150,43 @@ export default function App() {
   // Layout overlays
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isLocalAIHubOpen, setIsLocalAIHubOpen] = useState(false);
 
-  // Active routing & composer controls
+  // Engine, routing, tone & preferences
+  const [engineMode, setEngineMode] = useState<EngineMode>('cloud');
   const [routingMode, setRoutingMode] = useState<RoutingModeId>('auto');
   const [persona, setPersona] = useState<PersonaId>('architect');
+  const [responseTone, setResponseTone] = useState<ResponseTone>('direct');
   const [inputMode, setInputMode] = useState<InputMode>('chat');
   const [speechLang, setSpeechLang] = useState<SpeechLanguageCode>('en-US');
   const [isTemporaryChat, setIsTemporaryChat] = useState(false);
-  const [isPersonalIntelligenceEnabled, setIsPersonalIntelligenceEnabled] =
-    useState(true);
 
-  // Conversations & workspace data
-  const [chats, setChats] = useState<ChatSession[]>(INITIAL_CHATS);
+  // Local AI Server config & live status
+  const [localServerConfig, setLocalServerConfig] = useState<LocalServerConfig>(
+    DEFAULT_LOCAL_SERVER_CONFIG
+  );
+  const [localServerStatus, setLocalServerStatus] =
+    useState<LocalServerStatus>('idle');
+  const [localServerLatencyMs, setLocalServerLatencyMs] = useState<
+    number | null
+  >(null);
+  const [loadedNativeModel, setLoadedNativeModel] = useState<string | null>(
+    null
+  );
+  const [isNativeStreaming, setIsNativeStreaming] = useState(false);
+
+  // Live Admin Config (Supabase onyx_admin_config) & Announcement Banner
+  const [adminConfig, setAdminConfig] =
+    useState<AdminConfig>(DEFAULT_ADMIN_CONFIG);
+  const [dismissedAnnouncement, setDismissedAnnouncement] = useState<string>('');
+
+  // Usage & Token Monitor stats
+  const [usageStats, setUsageStats] = useState<UsageStats>(() =>
+    createInitialUsageStats()
+  );
+
+  // Conversations & workspace data (100% real user data — ZERO hardcoded demo chats)
+  const [chats, setChats] = useState<ChatSession[]>([]);
   const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [latestRevealingMessageId, setLatestRevealingMessageId] = useState<
@@ -123,22 +196,22 @@ export default function App() {
     createSessionId()
   );
   const [tempMessages, setTempMessages] = useState<ChatMessage[]>([]);
-  const [vaults, setVaults] = useState<MemoryVault[]>(INITIAL_MEMORY_VAULTS);
+  const [isWorkspaceHydrated, setIsWorkspaceHydrated] = useState(false);
 
-  // Input & live Cloudflare Worker request state
+  // Input & live request state (zero red error state)
   const [inputValue, setInputValue] = useState('');
   const [activeTools, setActiveTools] = useState<ActiveTools>({
-    generatePdf: false,
     createImage: false,
     attachedFileName: null,
     attachedPreviewUrl: null,
+    attachedImage: null,
   });
   const [isSending, setIsSending] = useState(false);
-  const [pendingError, setPendingError] = useState<PendingChatError | null>(
-    null
-  );
+  const [thinkingStatus, setThinkingStatus] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scopeKey = authUser?.id ? `user_${authUser.id}` : 'guest_local';
+  const latestSnapshotRef = useRef<PersistedWorkspaceSnapshot | null>(null);
 
   const triggerBootSplash = useCallback((reason: BootTriggerReason) => {
     setBootState((prev) => ({
@@ -148,11 +221,36 @@ export default function App() {
     }));
   }, []);
 
-  // Re-run silent boot animation when returning after > 2 minutes in background
+  // Keep latest workspace snapshot in a ref for synchronous flush on minimize/close
+  latestSnapshotRef.current = {
+    chats,
+    activeChatId,
+    draftInput: inputValue,
+    engineMode,
+    routingMode,
+    persona,
+    responseTone,
+    speechLang,
+    localServerConfig,
+    usageStats,
+    updatedAt: Date.now(),
+  };
+
+  // Flush synchronously on minimize/pagehide and trigger resume splash if minimized > 2 min
   useEffect(() => {
+    function flushSyncBackup() {
+      if (isWorkspaceHydrated && latestSnapshotRef.current) {
+        savePersistedWorkspaceSyncBackup(scopeKey, {
+          ...latestSnapshotRef.current,
+          updatedAt: Date.now(),
+        });
+      }
+    }
+
     function handleVisibilityChange() {
       if (document.visibilityState === 'hidden') {
         hiddenTimestampRef.current = Date.now();
+        flushSyncBackup();
       } else if (document.visibilityState === 'visible') {
         const hiddenAt = hiddenTimestampRef.current;
         hiddenTimestampRef.current = null;
@@ -163,9 +261,27 @@ export default function App() {
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () =>
+    window.addEventListener('pagehide', flushSyncBackup);
+    return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [triggerBootSplash]);
+      window.removeEventListener('pagehide', flushSyncBackup);
+    };
+  }, [isWorkspaceHydrated, scopeKey, triggerBootSplash]);
+
+  // Fetch live Supabase admin config on mount
+  useEffect(() => {
+    let cancelled = false;
+    fetchLiveAdminConfig()
+      .then((liveConfig) => {
+        if (!cancelled) {
+          setAdminConfig(liveConfig);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Hydrate persistent Supabase auth session on mount and subscribe to auth changes
   useEffect(() => {
@@ -208,50 +324,129 @@ export default function App() {
     };
   }, []);
 
-  // Load persisted Supabase chats when authenticated
+  // Hydrate full persistent workspace from IndexedDB (+ localStorage fallback) & Supabase
   useEffect(() => {
-    if (!authUser) {
-      if (isGuestMode) {
-        setChats(INITIAL_CHATS);
-      }
+    if (!authReady) {
+      return;
+    }
+    if (!authUser && !isGuestMode) {
       return;
     }
 
     let cancelled = false;
+    setIsWorkspaceHydrated(false);
     setIsLoadingChats(true);
 
-    fetchUserChats(authUser.id)
-      .then((chatsResult) => {
-        if (cancelled) {
-          return;
-        }
-        if (!chatsResult.error) {
-          setChats(chatsResult.sessions);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoadingChats(false);
-        }
-      });
+    async function hydrateWorkspace() {
+      const localSnapshot = await loadPersistedWorkspace(scopeKey);
+      if (cancelled) {
+        return;
+      }
 
+      let resolvedChats: ChatSession[] = [];
+      if (localSnapshot) {
+        resolvedChats = Array.isArray(localSnapshot.chats)
+          ? localSnapshot.chats
+          : [];
+        setChats(resolvedChats);
+        setActiveChatId(localSnapshot.activeChatId ?? null);
+        setInputValue(localSnapshot.draftInput ?? '');
+        setEngineMode(localSnapshot.engineMode ?? 'cloud');
+        setRoutingMode(localSnapshot.routingMode ?? 'auto');
+        setPersona(localSnapshot.persona ?? 'architect');
+        setResponseTone(localSnapshot.responseTone ?? 'direct');
+        setSpeechLang(localSnapshot.speechLang ?? 'en-US');
+        if (localSnapshot.localServerConfig) {
+          setLocalServerConfig(localSnapshot.localServerConfig);
+        }
+        if (localSnapshot.usageStats) {
+          const rolled = rolloverUsageIfNewDay(localSnapshot.usageStats);
+          setUsageStats({
+            ...rolled,
+            sessionInputTokens: 0,
+            sessionOutputTokens: 0,
+          });
+        }
+      } else {
+        setChats([]);
+        setActiveChatId(null);
+      }
+
+      // If signed in to Supabase, merge remote active_chats cleanly
+      if (authUser) {
+        try {
+          const remoteResult = await fetchUserChats(authUser.id);
+          if (!cancelled && !remoteResult.error && remoteResult.sessions.length > 0) {
+            const merged = mergeRemoteAndLocalChats(
+              resolvedChats,
+              remoteResult.sessions
+            );
+            setChats(merged);
+          }
+        } catch {
+          // Keep local IndexedDB chats seamlessly
+        }
+      }
+
+      if (!cancelled) {
+        setIsLoadingChats(false);
+        setIsWorkspaceHydrated(true);
+      }
+    }
+
+    void hydrateWorkspace();
     return () => {
       cancelled = true;
     };
-  }, [authUser, isGuestMode]);
+  }, [authReady, authUser, isGuestMode, scopeKey]);
+
+  // Persist workspace to IndexedDB + synchronous localStorage backup whenever state changes
+  useEffect(() => {
+    if (!isWorkspaceHydrated) {
+      return;
+    }
+
+    const snapshot: PersistedWorkspaceSnapshot = {
+      chats,
+      activeChatId,
+      draftInput: inputValue,
+      engineMode,
+      routingMode,
+      persona,
+      responseTone,
+      speechLang,
+      localServerConfig,
+      usageStats,
+      updatedAt: Date.now(),
+    };
+
+    void savePersistedWorkspace(scopeKey, snapshot);
+  }, [
+    isWorkspaceHydrated,
+    scopeKey,
+    chats,
+    activeChatId,
+    inputValue,
+    engineMode,
+    routingMode,
+    persona,
+    responseTone,
+    speechLang,
+    localServerConfig,
+    usageStats,
+  ]);
 
   const handleNewChat = useCallback(() => {
     setActiveChatId(null);
     setLatestRevealingMessageId(null);
     setTempMessages([]);
     setTempSessionId(createSessionId());
-    setPendingError(null);
     setInputValue('');
     setActiveTools({
-      generatePdf: false,
       createImage: false,
       attachedFileName: null,
       attachedPreviewUrl: null,
+      attachedImage: null,
     });
     textareaRef.current?.focus();
   }, []);
@@ -279,13 +474,17 @@ export default function App() {
     ? tempMessages
     : activeChat?.messages ?? [];
   const hasActiveConversation = visibleMessages.length > 0 || isSending;
+  const visibleAnnouncement =
+    adminConfig.announcement.trim() &&
+    adminConfig.announcement.trim() !== dismissedAnnouncement
+      ? adminConfig.announcement.trim()
+      : '';
 
   function handleToggleSpeechLang() {
     setSpeechLang((prev) => (prev === 'en-US' ? 'bn-BD' : 'en-US'));
   }
 
   function handleToggleTemporaryChat() {
-    setPendingError(null);
     setLatestRevealingMessageId(null);
     setIsTemporaryChat((prev) => {
       const next = !prev;
@@ -298,121 +497,379 @@ export default function App() {
     });
   }
 
-  function handleSelectVault(vault: MemoryVault) {
-    setInputValue(vault.seedPrompt);
-    textareaRef.current?.focus();
-  }
-
   function handleSelectChat(chatId: string) {
     setIsTemporaryChat(false);
-    setPendingError(null);
     setLatestRevealingMessageId(null);
     setActiveChatId(chatId);
   }
 
-  async function dispatchBackendRequest(params: {
+  function handleAttachImage(image: ImageAttachmentPayload | null) {
+    setActiveTools((prev) => ({
+      ...prev,
+      // Auto-disable Create Image (Flux) when an image is attached so Vision takes over
+      createImage: image ? false : prev.createImage,
+      attachedImage: image,
+      attachedFileName: image ? image.fileName : null,
+      attachedPreviewUrl: image ? image.previewUrl : null,
+    }));
+  }
+
+  function handleAttachFile(fileName: string | null) {
+    setActiveTools((prev) => ({
+      ...prev,
+      attachedFileName: fileName,
+      attachedPreviewUrl: fileName ? prev.attachedPreviewUrl : null,
+      attachedImage: fileName ? prev.attachedImage : null,
+    }));
+  }
+
+  function handleClearAllHistory() {
+    setChats([]);
+    setActiveChatId(null);
+    setTempMessages([]);
+    setLatestRevealingMessageId(null);
+  }
+
+  function appendAssistantMessage(
+    sessionId: string,
+    temporary: boolean,
+    mode: RoutingModeId,
+    assistantMessage: ChatMessage
+  ) {
+    setLatestRevealingMessageId(assistantMessage.id);
+
+    if (temporary) {
+      setTempMessages((prev) => [...prev, assistantMessage]);
+    } else {
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === sessionId
+            ? {
+                ...chat,
+                updatedAt: 'Just now',
+                mode,
+                messages: [...chat.messages, assistantMessage],
+              }
+            : chat
+        )
+      );
+    }
+  }
+
+  function updateAssistantMessageById(
+    sessionId: string,
+    temporary: boolean,
+    messageId: string,
+    updater: (msg: ChatMessage) => ChatMessage
+  ) {
+    if (temporary) {
+      setTempMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? updater(msg) : msg))
+      );
+    } else {
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === sessionId
+            ? {
+                ...chat,
+                updatedAt: 'Just now',
+                messages: chat.messages.map((msg) =>
+                  msg.id === messageId ? updater(msg) : msg
+                ),
+              }
+            : chat
+        )
+      );
+    }
+  }
+
+  async function dispatchEngineRequest(params: {
     prompt: string;
+    rawUserPrompt: string;
     sessionId: string;
     mode: RoutingModeId;
     persona: PersonaId;
     inputMode: InputMode;
-    tools: ActiveTools;
+    engine: EngineMode;
+    attachedImage: ImageAttachmentPayload | null;
     temporary: boolean;
+    history: Array<{ role: 'user' | 'assistant'; content: string }>;
   }) {
     const {
       prompt,
+      rawUserPrompt,
       sessionId,
       mode,
       persona: reqPersona,
       inputMode: reqInputMode,
-      tools,
+      engine,
+      attachedImage,
       temporary,
+      history,
     } = params;
 
     setIsSending(true);
-    setPendingError(null);
+    setThinkingStatus(
+      engine === 'local'
+        ? isNativeLocalLLMAvailable()
+          ? 'Running on-device model...'
+          : 'Running local server...'
+        : attachedImage
+          ? 'Analyzing image...'
+          : 'Thinking...'
+    );
+
+    const estimatedIn = estimateTokenCount(prompt);
 
     try {
-      const payload = buildChatRequestPayload({
-        userId: authUser?.id ?? null,
-        message: prompt,
-        routingMode: mode,
-        inputMode: reqInputMode,
-        persona: reqPersona,
-        generatePdf: tools.generatePdf,
-      });
+      let answerText = '';
+      let thinkingLog: string | undefined;
+      let mediaCards = undefined;
+      let sources = undefined;
+      let isFallback = false;
+      let usageIn = estimatedIn;
+      let usageOut = 0;
 
-      const backendResult = await sendChatToBackend(payload);
+      if (engine === 'local') {
+        if (isNativeLocalLLMAvailable()) {
+          // Ensure an on-device GGUF model is loaded in native memory
+          let activeFile = loadedNativeModel;
+          if (!activeFile) {
+            const inventory = await getNativeDownloadedModels();
+            if (inventory?.loadedModel) {
+              activeFile = inventory.loadedModel;
+              setLoadedNativeModel(activeFile);
+            } else if (inventory && inventory.models.length > 0) {
+              const preferred =
+                inventory.models.find(
+                  (m) => m.fileName === localServerConfig.modelName
+                ) ?? inventory.models[0];
+              setThinkingStatus(`Loading ${preferred.fileName}...`);
+              try {
+                const loaded = await loadNativeModel({
+                  fileName: preferred.fileName,
+                  nCtx: 2048,
+                });
+                if (loaded.loaded) {
+                  activeFile = loaded.fileName;
+                  setLoadedNativeModel(loaded.fileName);
+                }
+              } catch {
+                activeFile = null;
+              }
+            }
+          }
+
+          if (activeFile) {
+            const streamingMessageId = `msg-${Date.now()}-assistant`;
+            const replyTimestamp = formatCurrentTime();
+            const streamingShell: ChatMessage = {
+              id: streamingMessageId,
+              role: 'assistant',
+              content: '',
+              timestamp: replyTimestamp,
+              mode,
+              persona: reqPersona,
+              inputMode: reqInputMode,
+              engine: 'local',
+              isStreamingLive: true,
+            };
+
+            appendAssistantMessage(sessionId, temporary, mode, streamingShell);
+            setIsNativeStreaming(true);
+            setThinkingStatus('Generating on-device...');
+
+            try {
+              const nativeOutcome = await generateWithNativeLocalLLM({
+                message: prompt,
+                history,
+                systemPrompt: adminConfig.globalSystemPrompt,
+                temperature: localServerConfig.temperature,
+                maxTokens: localServerConfig.maxTokens,
+                onToken: (_token, accumulatedText) => {
+                  updateAssistantMessageById(
+                    sessionId,
+                    temporary,
+                    streamingMessageId,
+                    (msg) => ({
+                      ...msg,
+                      content: accumulatedText,
+                      isStreamingLive: true,
+                    })
+                  );
+                },
+              });
+
+              if (nativeOutcome.ok && nativeOutcome.text) {
+                const finalContent = nativeOutcome.text;
+                const finalUsageOut =
+                  nativeOutcome.tokensGenerated ??
+                  estimateTokenCount(finalContent);
+
+                updateAssistantMessageById(
+                  sessionId,
+                  temporary,
+                  streamingMessageId,
+                  (msg) => ({
+                    ...msg,
+                    content: finalContent,
+                    isStreamingLive: false,
+                  })
+                );
+
+                setUsageStats((prev) =>
+                  recordMessageUsage(prev, estimatedIn, finalUsageOut)
+                );
+
+                if (authUser && !temporary) {
+                  void saveActiveChatMessage({
+                    userId: authUser.id,
+                    sessionId,
+                    role: 'assistant',
+                    content: finalContent,
+                    thinkingLog: null,
+                  });
+                }
+                return;
+              }
+
+              // Native generation returned empty/error -> replace shell with polite fallback
+              const fallbackText = buildGracefulFallbackReply({
+                prompt: rawUserPrompt,
+                speechLang,
+                isOffline: false,
+                isLocalEngine: true,
+              });
+              updateAssistantMessageById(
+                sessionId,
+                temporary,
+                streamingMessageId,
+                (msg) => ({
+                  ...msg,
+                  content: fallbackText,
+                  isStreamingLive: false,
+                  isFallback: true,
+                })
+              );
+              setUsageStats((prev) =>
+                recordMessageUsage(
+                  prev,
+                  estimatedIn,
+                  estimateTokenCount(fallbackText)
+                )
+              );
+              return;
+            } finally {
+              setIsNativeStreaming(false);
+            }
+          }
+        }
+
+        // Web browser fallback (or Android fallback if no native GGUF is downloaded yet)
+        const localOutcome = await sendChatToLocalServer({
+          config: localServerConfig,
+          message: prompt,
+          history,
+          systemPrompt: adminConfig.globalSystemPrompt,
+          attachedImage,
+        });
+
+        if (localOutcome.ok && localOutcome.response) {
+          answerText = localOutcome.response.answer;
+          usageIn = localOutcome.response.usage?.inputTokens ?? estimatedIn;
+          usageOut =
+            localOutcome.response.usage?.outputTokens ??
+            estimateTokenCount(answerText);
+        } else {
+          isFallback = true;
+          answerText = buildGracefulFallbackReply({
+            prompt: rawUserPrompt,
+            speechLang,
+            isOffline: false,
+            isLocalEngine: true,
+          });
+          usageOut = estimateTokenCount(answerText);
+        }
+      } else {
+        const payload = buildChatRequestPayload({
+          userId: authUser?.id ?? null,
+          message: prompt,
+          history,
+          routingMode: mode,
+          inputMode: reqInputMode,
+          persona: reqPersona,
+          tone: responseTone,
+          adminConfig,
+          attachedImage,
+        });
+
+        const cloudOutcome = await sendChatWithSilentFailover({
+          payload,
+          adminConfig,
+          onStatusChange: (label) => setThinkingStatus(label),
+        });
+
+        if (cloudOutcome.ok && cloudOutcome.response) {
+          answerText = cloudOutcome.response.answer;
+          thinkingLog = cloudOutcome.response.thinking_log ?? undefined;
+          mediaCards =
+            cloudOutcome.response.media_cards.length > 0
+              ? cloudOutcome.response.media_cards
+              : undefined;
+          sources =
+            cloudOutcome.response.sources.length > 0
+              ? cloudOutcome.response.sources
+              : undefined;
+          usageIn = cloudOutcome.response.usage?.inputTokens ?? estimatedIn;
+          usageOut =
+            cloudOutcome.response.usage?.outputTokens ??
+            estimateTokenCount(answerText);
+        } else {
+          // NEVER show a red error card — render polite bilingual fallback inside a normal assistant bubble
+          isFallback = true;
+          answerText = buildGracefulFallbackReply({
+            prompt: rawUserPrompt,
+            speechLang,
+            isOffline: cloudOutcome.isOffline,
+          });
+          usageOut = estimateTokenCount(answerText);
+        }
+      }
+
       const replyTimestamp = formatCurrentTime();
-
       const assistantMessage: ChatMessage = {
         id: `msg-${Date.now()}-assistant`,
         role: 'assistant',
-        content: backendResult.answer,
+        content: answerText,
         timestamp: replyTimestamp,
         mode,
         persona: reqPersona,
         inputMode: reqInputMode,
-        thinkingSummary: backendResult.thinking_log ?? undefined,
-        mediaCards:
-          backendResult.media_cards.length > 0
-            ? backendResult.media_cards
-            : undefined,
-        sources:
-          backendResult.sources.length > 0 ? backendResult.sources : undefined,
-        pdfVault: backendResult.pdf_vault,
+        engine,
+        thinkingSummary: thinkingLog,
+        mediaCards,
+        sources,
+        isFallback,
       };
 
-      setLatestRevealingMessageId(assistantMessage.id);
+      appendAssistantMessage(sessionId, temporary, mode, assistantMessage);
 
-      if (temporary) {
-        setTempMessages((prev) => [...prev, assistantMessage]);
-      } else {
-        setChats((prev) =>
-          prev.map((chat) =>
-            chat.id === sessionId
-              ? {
-                  ...chat,
-                  updatedAt: 'Just now',
-                  mode,
-                  messages: [...chat.messages, assistantMessage],
-                }
-              : chat
-          )
-        );
-      }
+      setUsageStats((prev) => recordMessageUsage(prev, usageIn, usageOut));
 
-      // Persist assistant response to Supabase active_chats when authenticated & non-temporary
-      if (authUser && !temporary) {
+      // Persist assistant response to Supabase active_chats when authenticated, non-temporary, and non-fallback
+      if (authUser && !temporary && !isFallback) {
         void saveActiveChatMessage({
           userId: authUser.id,
           sessionId,
           role: 'assistant',
           content: assistantMessage.content,
-          thinkingLog: backendResult.thinking_log,
-          mediaCards: backendResult.media_cards,
+          thinkingLog: thinkingLog ?? null,
+          mediaCards,
         });
       }
-    } catch (error) {
-      const diagnostic =
-        error instanceof OnyxBackendError
-          ? error.diagnostic
-          : error instanceof Error
-            ? extractErrorDiagnostic(error.message)
-            : 'Unexpected backend error';
-
-      setPendingError({
-        message: FRIENDLY_ENGINE_ERROR_MESSAGE,
-        diagnostic,
-        retryPrompt: prompt,
-        retryMode: mode,
-        retryPersona: reqPersona,
-        retryInputMode: reqInputMode,
-        retryTools: tools,
-        sessionId,
-      });
     } finally {
       setIsSending(false);
+      setThinkingStatus(null);
     }
   }
 
@@ -422,12 +879,13 @@ export default function App() {
     }
 
     const trimmed = inputValue.trim();
+    const attachedImage = activeTools.attachedImage ?? null;
     const effectivePrompt =
       trimmed ||
-      (activeTools.attachedFileName
-        ? `Analyze attached file: ${activeTools.attachedFileName}`
-        : activeTools.generatePdf
-          ? 'Generate a structured PDF summary for Telegram'
+      (attachedImage
+        ? 'Analyze this attached image in detail.'
+        : activeTools.attachedFileName
+          ? `Analyze attached file: ${activeTools.attachedFileName}`
           : activeTools.createImage
             ? 'Create a visual concept mockup'
             : '');
@@ -438,6 +896,7 @@ export default function App() {
 
     const messageText =
       activeTools.attachedFileName &&
+      !attachedImage &&
       !effectivePrompt.includes(activeTools.attachedFileName)
         ? `${effectivePrompt}\n\n[Attached file: ${activeTools.attachedFileName}]`
         : effectivePrompt;
@@ -448,6 +907,13 @@ export default function App() {
       ? tempSessionId
       : activeChatId ?? createSessionId();
 
+    const priorHistory = visibleMessages
+      .filter((msg) => !msg.isFallback && msg.content.trim().length > 0)
+      .map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
     const userMessage: ChatMessage = {
       id: `msg-${Date.now()}-user`,
       role: 'user',
@@ -456,9 +922,10 @@ export default function App() {
       mode: routingMode,
       persona,
       inputMode,
+      engine: engineMode,
+      attachedImagePreview: attachedImage?.previewUrl,
       toolsUsed: {
-        generatePdf: currentTools.generatePdf,
-        createImage: currentTools.createImage,
+        createImage: !attachedImage && currentTools.createImage,
         attachedFileName: currentTools.attachedFileName,
       },
     };
@@ -492,10 +959,10 @@ export default function App() {
 
     setInputValue('');
     setActiveTools({
-      generatePdf: false,
       createImage: false,
       attachedFileName: null,
       attachedPreviewUrl: null,
+      attachedImage: null,
     });
 
     // Persist user message to Supabase active_chats when authenticated & non-temporary
@@ -508,8 +975,8 @@ export default function App() {
       });
     }
 
-    // Direct Pollinations Flux image generation when Create Image toggle is enabled
-    if (currentTools.createImage) {
+    // Direct Pollinations Flux image generation ONLY when Create Image is enabled and NO image is attached
+    if (currentTools.createImage && !attachedImage) {
       const imageUrl = buildPollinationsImageUrl(effectivePrompt);
       const imageReplyTimestamp = formatCurrentTime();
       const imageAssistantMessage: ChatMessage = {
@@ -520,30 +987,23 @@ export default function App() {
         mode: routingMode,
         persona,
         inputMode,
+        engine: 'cloud',
         generatedImage: {
           prompt: effectivePrompt,
           url: imageUrl,
         },
       };
 
-      setLatestRevealingMessageId(imageAssistantMessage.id);
+      appendAssistantMessage(
+        sessionId,
+        isTemporaryChat,
+        routingMode,
+        imageAssistantMessage
+      );
 
-      if (isTemporaryChat) {
-        setTempMessages((prev) => [...prev, imageAssistantMessage]);
-      } else {
-        setChats((prev) =>
-          prev.map((chat) =>
-            chat.id === sessionId
-              ? {
-                  ...chat,
-                  updatedAt: 'Just now',
-                  mode: routingMode,
-                  messages: [...chat.messages, imageAssistantMessage],
-                }
-              : chat
-          )
-        );
-      }
+      setUsageStats((prev) =>
+        recordMessageUsage(prev, estimateTokenCount(effectivePrompt), 12)
+      );
 
       if (authUser && !isTemporaryChat) {
         void saveActiveChatMessage({
@@ -565,30 +1025,17 @@ export default function App() {
       return;
     }
 
-    await dispatchBackendRequest({
+    await dispatchEngineRequest({
       prompt: messageText,
+      rawUserPrompt: effectivePrompt,
       sessionId,
       mode: routingMode,
       persona,
       inputMode,
-      tools: currentTools,
+      engine: engineMode,
+      attachedImage,
       temporary: isTemporaryChat,
-    });
-  }
-
-  async function handleRetryLastRequest() {
-    if (!pendingError || isSending) {
-      return;
-    }
-
-    await dispatchBackendRequest({
-      prompt: pendingError.retryPrompt,
-      sessionId: pendingError.sessionId,
-      mode: pendingError.retryMode,
-      persona: pendingError.retryPersona,
-      inputMode: pendingError.retryInputMode,
-      tools: pendingError.retryTools,
-      temporary: isTemporaryChat,
+      history: priorHistory,
     });
   }
 
@@ -604,14 +1051,16 @@ export default function App() {
     }
 
     let precedingUserPrompt: string | null = null;
+    let precedingUserIndex = -1;
     for (let i = targetIndex - 1; i >= 0; i -= 1) {
       if (thread[i].role === 'user') {
         precedingUserPrompt = thread[i].content;
+        precedingUserIndex = i;
         break;
       }
     }
 
-    if (!precedingUserPrompt) {
+    if (!precedingUserPrompt || precedingUserIndex === -1) {
       return;
     }
 
@@ -619,50 +1068,25 @@ export default function App() {
       ? tempSessionId
       : activeChatId ?? createSessionId();
 
-    await dispatchBackendRequest({
+    const priorHistory = thread
+      .slice(0, precedingUserIndex)
+      .filter((m) => !m.isFallback && m.content.trim().length > 0)
+      .map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+    await dispatchEngineRequest({
       prompt: precedingUserPrompt,
+      rawUserPrompt: precedingUserPrompt,
       sessionId,
       mode: routingMode,
       persona,
       inputMode,
-      tools: {
-        generatePdf: false,
-        createImage: false,
-        attachedFileName: null,
-        attachedPreviewUrl: null,
-      },
+      engine: engineMode,
+      attachedImage: null,
       temporary: isTemporaryChat,
-    });
-  }
-
-  function handleSaveMessageToVault(message: ChatMessage) {
-    const timestamp = formatCurrentTime();
-    setVaults((prev) => {
-      const existingSaved = prev.find((v) => v.id === 'vault-saved-insights');
-      if (existingSaved) {
-        return prev.map((v) =>
-          v.id === 'vault-saved-insights'
-            ? {
-                ...v,
-                itemCount: v.itemCount + 1,
-                updatedAt: `Today, ${timestamp}`,
-                summary: deriveChatTitle(message.content),
-              }
-            : v
-        );
-      }
-
-      const newVault: MemoryVault = {
-        id: 'vault-saved-insights',
-        name: 'Saved Insights',
-        itemCount: 1,
-        updatedAt: `Today, ${timestamp}`,
-        summary: deriveChatTitle(message.content),
-        seedPrompt: `Recall my saved insights starting with: ${deriveChatTitle(
-          message.content
-        )}`,
-      };
-      return [newVault, ...prev];
+      history: priorHistory,
     });
   }
 
@@ -687,34 +1111,9 @@ export default function App() {
     };
 
     setIsTemporaryChat(false);
-    setPendingError(null);
     setLatestRevealingMessageId(null);
     setChats((prev) => [branchedChat, ...prev]);
     setActiveChatId(newSessionId);
-  }
-
-  async function handleExportMessagePdf(message: ChatMessage) {
-    if (isSending) {
-      return;
-    }
-    const sessionId = isTemporaryChat
-      ? tempSessionId
-      : activeChatId ?? createSessionId();
-
-    await dispatchBackendRequest({
-      prompt: `Format and export the following response as a clean Telegram Vault PDF brief:\n\n${message.content}`,
-      sessionId,
-      mode: routingMode,
-      persona,
-      inputMode: 'chat',
-      tools: {
-        generatePdf: true,
-        createImage: false,
-        attachedFileName: null,
-        attachedPreviewUrl: null,
-      },
-      temporary: isTemporaryChat,
-    });
   }
 
   function handleToggleTaskStep(messageId: string, stepId: string) {
@@ -753,10 +1152,10 @@ export default function App() {
     setIsGuestMode(false);
     setIsSettingsOpen(false);
     setIsSidebarOpen(false);
+    setIsLocalAIHubOpen(false);
     setActiveChatId(null);
     setLatestRevealingMessageId(null);
     setTempMessages([]);
-    setPendingError(null);
   }
 
   const handleBootComplete = useCallback(() => {
@@ -800,6 +1199,9 @@ export default function App() {
       <TopBar
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+        engineMode={engineMode}
+        onChangeEngineMode={setEngineMode}
+        onOpenLocalAIHub={() => setIsLocalAIHubOpen(true)}
         routingMode={routingMode}
         onSelectRoutingMode={setRoutingMode}
         persona={persona}
@@ -810,14 +1212,36 @@ export default function App() {
         userInitials={userProfile.initials}
       />
 
+      {/* Optional Live Admin Announcement Banner */}
+      {visibleAnnouncement && (
+        <div className="relative z-20 mx-auto mt-16 w-full max-w-[680px] px-4">
+          <div className="flex items-center justify-between gap-2 rounded-2xl bg-[#111524] px-3.5 py-2 text-xs text-blue-100">
+            <span className="flex min-w-0 items-center gap-2">
+              <Megaphone size={14} weight="fill" className="shrink-0 text-blue-400" />
+              <span className="truncate">{visibleAnnouncement}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setDismissedAnnouncement(visibleAnnouncement)}
+              aria-label="Dismiss announcement"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:text-white"
+            >
+              <X size={12} weight="bold" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         chats={chats}
         isLoadingChats={isLoadingChats}
         activeChatId={activeChatId}
+        engineMode={engineMode}
         onSelectChat={handleSelectChat}
         onNewChat={handleNewChat}
+        onOpenLocalAIHub={() => setIsLocalAIHubOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         userProfile={userProfile}
       />
@@ -838,20 +1262,16 @@ export default function App() {
             latestRevealingMessageId={latestRevealingMessageId}
             isTemporaryChat={isTemporaryChat}
             isSending={isSending}
+            statusMessage={thinkingStatus}
+            activeEngineMode={engineMode}
             activeRoutingMode={routingMode}
             activePersona={persona}
             activeInputMode={inputMode}
-            pendingError={pendingError}
-            onRetry={handleRetryLastRequest}
             onToggleTaskStep={handleToggleTaskStep}
             onRegenerateMessage={(messageId) => {
               void handleRegenerateMessage(messageId);
             }}
-            onSaveMessageToVault={handleSaveMessageToVault}
             onBranchFromMessage={handleBranchFromMessage}
-            onExportMessagePdf={(message) => {
-              void handleExportMessagePdf(message);
-            }}
           />
         )}
       </main>
@@ -867,45 +1287,57 @@ export default function App() {
           routingMode={routingMode}
           onSelectRoutingMode={setRoutingMode}
           activeTools={activeTools}
-          onToggleGeneratePdf={() =>
-            setActiveTools((prev) => ({
-              ...prev,
-              generatePdf: !prev.generatePdf,
-            }))
-          }
           onToggleCreateImage={() =>
             setActiveTools((prev) => ({
               ...prev,
-              createImage: !prev.createImage,
+              createImage: prev.attachedImage ? false : !prev.createImage,
             }))
           }
-          onAttachFile={(fileName, previewUrl) =>
-            setActiveTools((prev) => ({
-              ...prev,
-              attachedFileName: fileName,
-              attachedPreviewUrl: previewUrl ?? null,
-            }))
-          }
-          isPersonalIntelligenceEnabled={isPersonalIntelligenceEnabled}
-          onTogglePersonalIntelligence={() =>
-            setIsPersonalIntelligenceEnabled((prev) => !prev)
-          }
-          vaults={vaults}
-          onSelectVault={handleSelectVault}
-          onSubmit={handleSendMessage}
+          onAttachFile={handleAttachFile}
+          onAttachImage={handleAttachImage}
+          onSubmit={() => void handleSendMessage()}
           isSending={isSending}
+          canStopGeneration={isNativeStreaming}
+          onStopGeneration={() => void stopNativeGeneration()}
           textareaRef={textareaRef}
         />
       </div>
+
+      <LocalAIHubSheet
+        isOpen={isLocalAIHubOpen}
+        onClose={() => setIsLocalAIHubOpen(false)}
+        engineMode={engineMode}
+        onChangeEngineMode={setEngineMode}
+        config={localServerConfig}
+        onChangeConfig={setLocalServerConfig}
+        serverStatus={localServerStatus}
+        serverLatencyMs={localServerLatencyMs}
+        onUpdateServerStatus={(status, latencyMs) => {
+          setLocalServerStatus(status);
+          setLocalServerLatencyMs(latencyMs);
+        }}
+        loadedNativeModel={loadedNativeModel}
+        onChangeLoadedNativeModel={setLoadedNativeModel}
+      />
 
       <SettingsSheet
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         userProfile={userProfile}
+        engineMode={engineMode}
+        onChangeEngineMode={setEngineMode}
+        onOpenLocalAIHub={() => setIsLocalAIHubOpen(true)}
         persona={persona}
         onSelectPersona={setPersona}
+        responseTone={responseTone}
+        onSelectResponseTone={setResponseTone}
         speechLang={speechLang}
         onToggleSpeechLang={handleToggleSpeechLang}
+        usageStats={usageStats}
+        adminConfig={adminConfig}
+        onUpdateAdminConfig={setAdminConfig}
+        chats={chats}
+        onClearAllHistory={handleClearAllHistory}
         onSignOut={handleSignOut}
       />
 

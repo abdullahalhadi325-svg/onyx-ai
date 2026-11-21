@@ -4,7 +4,9 @@ export type PersonaId = 'architect' | 'investigator' | 'mentor' | 'critic';
 
 export type InputMode = 'chat' | 'task';
 
-export type SidebarTab = 'chats' | 'media';
+export type EngineMode = 'cloud' | 'local';
+
+export type ResponseTone = 'direct' | 'balanced' | 'concise' | 'detailed';
 
 export interface RoutingModeOption {
   id: RoutingModeId;
@@ -19,19 +21,19 @@ export interface PersonaOption {
   description: string;
 }
 
+export interface ImageAttachmentPayload {
+  fileName: string;
+  mimeType: string;
+  base64Data: string;
+  previewUrl: string;
+}
+
 export interface ActiveTools {
-  generatePdf: boolean;
   createImage: boolean;
   attachedFileName: string | null;
   attachedPreviewUrl?: string | null;
+  attachedImage?: ImageAttachmentPayload | null;
 }
-
-export interface TaskSettings {
-  autoExpandChecklist: boolean;
-  autoAttachPdf: boolean;
-}
-
-export type BackendHealthStatus = 'idle' | 'checking' | 'online' | 'degraded';
 
 export interface TaskStep {
   id: string;
@@ -54,14 +56,6 @@ export interface SourceItem {
   snippet?: string;
 }
 
-export interface PdfVaultInfo {
-  status?: string;
-  filename?: string;
-  url?: string;
-  message?: string;
-  messageId?: string;
-}
-
 export interface GeneratedImageArtifact {
   prompt: string;
   url: string;
@@ -69,12 +63,32 @@ export interface GeneratedImageArtifact {
 
 export type BackendChatMode = 'flash' | 'research' | 'deep_think' | 'task';
 
+export interface ConversationHistoryItem {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface BackendChatRequest {
   message: string;
+  messages: ConversationHistoryItem[];
+  history: ConversationHistoryItem[];
   mode: BackendChatMode;
   persona: PersonaId;
   user_id: string | null;
-  generate_pdf: boolean;
+  system_prompt?: string;
+  tone?: ResponseTone;
+  language?: 'bn' | 'en';
+  preferred_providers?: string[];
+  force_provider?: 'gemini';
+  vision?: boolean;
+  image_base64?: string;
+  image_mime_type?: string;
+  attachments?: Array<{
+    type: 'image';
+    mimeType: string;
+    data: string;
+    fileName?: string;
+  }>;
 }
 
 export interface BackendChatResponse {
@@ -84,7 +98,10 @@ export interface BackendChatResponse {
   thinking_log: string | null;
   media_cards: MediaCard[];
   sources: SourceItem[];
-  pdf_vault: PdfVaultInfo | null;
+  usage?: {
+    inputTokens?: number;
+    outputTokens?: number;
+  };
 }
 
 export interface ChatMessage {
@@ -95,29 +112,20 @@ export interface ChatMessage {
   mode: RoutingModeId;
   persona: PersonaId;
   inputMode: InputMode;
+  engine?: EngineMode;
   thinkingSummary?: string;
   thinkingDuration?: string;
   taskSteps?: TaskStep[];
   mediaCards?: MediaCard[];
   sources?: SourceItem[];
-  pdfVault?: PdfVaultInfo | null;
   generatedImage?: GeneratedImageArtifact;
+  attachedImagePreview?: string;
+  isFallback?: boolean;
+  isStreamingLive?: boolean;
   toolsUsed?: {
-    generatePdf?: boolean;
     createImage?: boolean;
     attachedFileName?: string | null;
   };
-}
-
-export interface PendingChatError {
-  message: string;
-  diagnostic?: string;
-  retryPrompt: string;
-  retryMode: RoutingModeId;
-  retryPersona: PersonaId;
-  retryInputMode: InputMode;
-  retryTools: ActiveTools;
-  sessionId: string;
 }
 
 export interface OnyxUserProfile {
@@ -136,27 +144,173 @@ export interface ChatSession {
   messages: ChatMessage[];
 }
 
-export interface MemoryVault {
+export interface LocalModelEntry {
   id: string;
   name: string;
-  itemCount: number;
-  updatedAt: string;
-  summary: string;
-  seedPrompt: string;
-}
-
-export interface MediaAsset {
-  id: string;
-  title: string;
-  kind: 'PDF' | 'Image' | 'Document';
+  quantization: string;
+  category: 'general' | 'uncensored';
   size: string;
-  createdAt: string;
-  destination: string;
+  ramRequired: string;
+  recommendedFor: string;
+  description: string;
+  fileName: string;
+  huggingfaceUrl: string;
 }
 
-export interface StarterPrompt {
-  id: string;
-  iconName: 'compass' | 'stack' | 'terminal';
+export interface LocalServerConfig {
+  endpointUrl: string;
+  modelName: string;
+  temperature: number;
+  maxTokens: number;
+}
+
+export type LocalServerStatus = 'idle' | 'checking' | 'connected' | 'offline';
+
+export interface DownloadedLocalModel {
+  fileName: string;
+  sizeBytes: number;
+  sizeMB: number;
+  lastModified: number;
+  isLoaded: boolean;
+}
+
+export interface PartialLocalModelDownload {
+  fileName: string;
+  downloadedBytes: number;
+  downloadedMB: number;
+}
+
+export interface LocalLLMInventoryResponse {
+  models: DownloadedLocalModel[];
+  partials: PartialLocalModelDownload[];
+  loadedModel: string | null;
+  availableStorageBytes: number;
+  totalStorageBytes: number;
+  modelsStorageBytes: number;
+  nativeReady: boolean;
+}
+
+export type LocalDownloadStatus =
+  | 'downloading'
+  | 'paused'
+  | 'cancelled'
+  | 'completed'
+  | 'error';
+
+export interface LocalLLMDownloadProgressEvent {
+  modelId: string;
+  fileName: string;
+  downloadedBytes: number;
+  totalBytes: number;
+  downloadedMB: number;
+  totalMB: number;
+  progress: number;
+  speedMBps: number;
+  status: LocalDownloadStatus;
+  error?: string;
+}
+
+export interface LocalLLMTokenEvent {
+  requestId?: string;
+  token: string;
+}
+
+export interface LocalLLMCompleteEvent {
+  requestId?: string;
   text: string;
-  suggestedInputMode?: InputMode;
+  tokensGenerated?: number;
+  tokensPerSecond?: number;
+  modelFileName?: string;
+}
+
+export interface LocalLLMErrorEvent {
+  requestId?: string;
+  message: string;
+}
+
+export interface CapacitorPluginListenerHandle {
+  remove: () => Promise<void> | void;
+}
+
+export interface NativeLocalLLMPlugin {
+  downloadModel(options: {
+    url: string;
+    fileName: string;
+    modelId?: string;
+  }): Promise<{
+    fileName: string;
+    sizeBytes?: number;
+    downloadedBytes?: number;
+    totalBytes?: number;
+    status: LocalDownloadStatus;
+  }>;
+  pauseDownload(options: { fileName: string }): Promise<{ paused: boolean }>;
+  cancelDownload(options: { fileName: string }): Promise<{ cancelled: boolean }>;
+  getDownloadedModels(): Promise<LocalLLMInventoryResponse>;
+  deleteModel(options: { fileName: string }): Promise<{
+    deleted: boolean;
+    fileName: string;
+  }>;
+  loadModel(options: {
+    fileName: string;
+    nCtx?: number;
+    nThreads?: number;
+  }): Promise<{
+    loaded: boolean;
+    fileName: string;
+    nCtx: number;
+    nThreads: number;
+  }>;
+  unloadModel(): Promise<{ unloaded: boolean }>;
+  generate(options: {
+    requestId?: string;
+    prompt?: string;
+    systemPrompt?: string;
+    messages?: ConversationHistoryItem[];
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<LocalLLMCompleteEvent>;
+  stopGeneration(): Promise<{ stopped: boolean }>;
+  addListener(
+    eventName: 'downloadProgress',
+    listenerFunc: (event: LocalLLMDownloadProgressEvent) => void
+  ): Promise<CapacitorPluginListenerHandle>;
+  addListener(
+    eventName: 'onToken',
+    listenerFunc: (event: LocalLLMTokenEvent) => void
+  ): Promise<CapacitorPluginListenerHandle>;
+  addListener(
+    eventName: 'onComplete',
+    listenerFunc: (event: LocalLLMCompleteEvent) => void
+  ): Promise<CapacitorPluginListenerHandle>;
+  addListener(
+    eventName: 'onError',
+    listenerFunc: (event: LocalLLMErrorEvent) => void
+  ): Promise<CapacitorPluginListenerHandle>;
+}
+
+export interface UsageStats {
+  dateKey: string;
+  dailyMessages: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  sessionInputTokens: number;
+  sessionOutputTokens: number;
+}
+
+export interface ProviderToggles {
+  gemini: boolean;
+  groq: boolean;
+  openrouter: boolean;
+  cloudflare: boolean;
+}
+
+export interface AdminConfig {
+  globalSystemPrompt: string;
+  enabledProviders: ProviderToggles;
+  dailyMessageLimit: number;
+  announcement: string;
+  telegramBotToken: string;
+  telegramChatId: string;
+  adminPinHash?: string;
 }

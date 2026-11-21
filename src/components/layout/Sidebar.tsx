@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
+  Cpu,
   GearSix,
   MagnifyingGlass,
   Plus,
   X,
 } from '@phosphor-icons/react';
 import { OnyxOrb } from '../common/OnyxOrb';
-import type { ChatSession, OnyxUserProfile } from '../../types/onyx';
+import type { ChatSession, EngineMode, OnyxUserProfile } from '../../types/onyx';
 import { filterChats } from '../../utils/onyxState';
 
 interface SidebarProps {
@@ -15,8 +16,10 @@ interface SidebarProps {
   chats: ChatSession[];
   isLoadingChats?: boolean;
   activeChatId: string | null;
+  engineMode: EngineMode;
   onSelectChat: (chatId: string) => void;
   onNewChat: () => void;
+  onOpenLocalAIHub: () => void;
   onOpenSettings: () => void;
   userProfile: OnyxUserProfile;
 }
@@ -27,8 +30,10 @@ export function Sidebar({
   chats,
   isLoadingChats = false,
   activeChatId,
+  engineMode,
   onSelectChat,
   onNewChat,
+  onOpenLocalAIHub,
   onOpenSettings,
   userProfile,
 }: SidebarProps) {
@@ -77,7 +82,7 @@ export function Sidebar({
   return (
     <div
       aria-hidden={!isOpen}
-      className={`fixed inset-0 z-50 transition-opacity duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+      className={`fixed inset-0 z-50 transition-opacity duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] ${
         isOpen
           ? 'visible pointer-events-auto opacity-100'
           : 'invisible pointer-events-none opacity-0'
@@ -89,10 +94,10 @@ export function Sidebar({
         className="absolute inset-0 bg-[#000000]/75 backdrop-blur-sm"
       />
 
-      {/* De-cluttered Slide-Over Drawer (flat opaque surface for 60fps mobile GPU scrolling) */}
+      {/* Seamless Obsidian Slide-Over Drawer (flat opaque surface for 60fps mobile scrolling) */}
       <aside
         aria-label="Onyx navigation"
-        className={`relative flex h-full w-[min(310px,86vw)] flex-col overflow-hidden border border-white/[0.07] bg-[#0C0C0F] transition-[transform,opacity] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`relative flex h-full w-[min(308px,86vw)] flex-col overflow-hidden bg-[#09090B] shadow-2xl transition-[transform,opacity] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
         }`}
       >
@@ -115,7 +120,7 @@ export function Sidebar({
           </button>
         </div>
 
-        {/* 2. + New Chat Pill & Search Chats */}
+        {/* 2. + New Chat Pill, Dedicated Local AI Button & Search Chats */}
         <div className="shrink-0 space-y-2.5 px-4 pb-3">
           <button
             type="button"
@@ -127,6 +132,33 @@ export function Sidebar({
           >
             <Plus size={16} weight="bold" />
             <span>New Chat</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onOpenLocalAIHub();
+            }}
+            className={`flex h-10 w-full items-center justify-between gap-2 rounded-xl px-3.5 font-sans text-sm font-medium active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-colors duration-150 ${
+              engineMode === 'local'
+                ? 'bg-[#2563EB]/20 text-white'
+                : 'bg-[#121216] text-zinc-200 hover:bg-[#191920]'
+            }`}
+          >
+            <span className="flex items-center gap-2.5">
+              <Cpu size={17} weight="regular" className="text-blue-400" />
+              <span>Local AI</span>
+            </span>
+            <span
+              className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${
+                engineMode === 'local'
+                  ? 'bg-blue-500/30 text-blue-200'
+                  : 'bg-white/[0.06] text-zinc-400'
+              }`}
+            >
+              {engineMode === 'local' ? 'Active' : 'GGUF Hub'}
+            </span>
           </button>
 
           <div className="relative">
@@ -146,7 +178,7 @@ export function Sidebar({
               onBlur={() => setIsSearchFocused(false)}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search chats"
-              className="h-10 w-full rounded-xl border border-white/[0.07] bg-[#141419] py-2 pr-9 pl-9 font-sans text-sm text-white placeholder:text-zinc-500 focus:border-blue-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20"
+              className="h-10 w-full rounded-xl bg-[#121216] py-2 pr-9 pl-9 font-sans text-sm text-white placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
             />
             {searchQuery && (
               <button
@@ -161,7 +193,7 @@ export function Sidebar({
           </div>
         </div>
 
-        {/* 3. Scrollable Recent Chats ONLY */}
+        {/* 3. Scrollable Recent Chats (100% real user history — zero demo chats) */}
         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-1">
           <div className="mb-1.5 flex items-center justify-between px-2">
             <h2 className="font-sans text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
@@ -179,10 +211,10 @@ export function Sidebar({
               <div className="h-10 rounded-xl bg-white/[0.04]" />
             </div>
           ) : filteredChats.length === 0 ? (
-            <p className="px-2 py-3 font-sans text-xs text-zinc-500">
+            <p className="px-2 py-4 font-sans text-xs leading-relaxed text-zinc-500">
               {searchQuery
                 ? `No chats match "${searchQuery}".`
-                : 'No recent conversations yet.'}
+                : 'Your conversations will appear here and stay saved automatically.'}
             </p>
           ) : (
             <div className="space-y-0.5">
@@ -198,7 +230,7 @@ export function Sidebar({
                     }}
                     className={`flex min-h-[42px] w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 transition-colors duration-150 ${
                       isActive
-                        ? 'bg-white/[0.08] text-white'
+                        ? 'bg-white/[0.09] text-white'
                         : 'text-zinc-300 hover:bg-white/[0.04] hover:text-white'
                     }`}
                   >
@@ -215,10 +247,10 @@ export function Sidebar({
           )}
         </div>
 
-        {/* 4. Compact 1-Row Footer + Tiny Credit (auto-hides on mobile keyboard) */}
+        {/* 4. Compact 1-Row Footer + Tiny Credit */}
         {!hideFooterForKeyboard && (
           <div className="shrink-0 px-3 pt-2 pb-3">
-            <div className="flex items-center justify-between gap-2 rounded-2xl bg-[#131318] p-2">
+            <div className="flex items-center justify-between gap-2 rounded-2xl bg-[#121216] p-2">
               <button
                 type="button"
                 onClick={() => {
@@ -227,7 +259,7 @@ export function Sidebar({
                 }}
                 className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl p-1 text-left hover:bg-white/[0.04] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 transition-transform duration-150"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#222430] font-sans text-xs font-medium text-white">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F2230] font-sans text-xs font-medium text-white">
                   {userProfile.initials}
                 </div>
                 <span className="truncate font-sans text-sm font-medium text-white">

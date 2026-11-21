@@ -1,0 +1,62 @@
+[
+  {
+    "id": "qwen2.5-3b-instruct-q4",
+    "name": "Qwen2.5-3B-Instruct",
+    "quantization": "Q4_K_M",
+    "category": "general",
+    "size": "1.93 GB",
+    "ramRequired": "4 GB+ RAM",
+    "recommendedFor": "8GB Android Phones · Coding & Multilingual (EN/BN)",
+    "description": "Fast, sharp general-purpose and coding model with strong structured reasoning and low memory overhead.",
+    "fileName": "qwen2.5-3b-instruct-q4_k_m.gguf",
+    "huggingfaceUrl": "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf"
+  },
+  {
+    "id": "dolphin-2.9-llama3.2-3b-q4",
+    "name": "Dolphin-2.9-Llama3.2-3B",
+    "quantization": "Q4_K_M",
+    "category": "uncensored",
+    "size": "2.02 GB",
+    "ramRequired": "6 GB+ RAM",
+    "recommendedFor": "8GB Android Phones · Uncensored Assistant",
+    "description": "Uncensored fine-tune built on Llama 3.2 3B for unrestricted creative writing, local reasoning, and technical tasks.",
+    "fileName": "Dolphin-2.9-Llama3.2-3B-Q4_K_M.gguf",
+    "huggingfaceUrl": "https://huggingface.co/bartowski/Dolphin-2.9.4-Llama3.2-3B-GGUF/resolve/main/Dolphin-2.9.4-Llama3.2-3B-Q4_K_M.gguf"
+  },
+  {
+    "id": "gemma-2-2b-uncensored-q4",
+    "name": "Gemma-2-2B-Uncensored",
+    "quantization": "Q4_K_M",
+    "category": "uncensored",
+    "size": "1.63 GB",
+    "ramRequired": "4 GB+ RAM",
+    "recommendedFor": "6GB–8GB Phones · Ultra-Fast Offline",
+    "description": "Ultra-lightweight uncensored Gemma 2 2B quantization delivering high tokens/sec on mobile Snapdragon & Dimensity CPUs.",
+    "fileName": "gemma-2-2b-it-abliterated-Q4_K_M.gguf",
+    "huggingfaceUrl": "https://huggingface.co/bartowski/gemma-2-2b-it-abliterated-GGUF/resolve/main/gemma-2-2b-it-abliterated-Q4_K_M.gguf"
+  },
+  {
+    "id": "llama-3.2-3b-instruct-q4",
+    "name": "Llama-3.2-3B-Instruct",
+    "quantization": "Q4_K_M",
+    "category": "general",
+    "size": "2.02 GB",
+    "ramRequired": "6 GB+ RAM",
+    "recommendedFor": "8GB Android Phones · Everyday Chat",
+    "description": "Meta's mobile-optimized 3B instruction model with crisp summaries, tool following, and rapid response times.",
+    "fileName": "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+    "huggingfaceUrl": "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf"
+  },
+  {
+    "id": "phi-3.5-mini-instruct-q4",
+    "name": "Phi-3.5-Mini-Instruct",
+    "quantization": "Q4_K_M",
+    "category": "general",
+    "size": "2.39 GB",
+    "ramRequired": "6 GB+ RAM",
+    "recommendedFor": "8GB Android Phones · Deep Logic & Math",
+    "description": "Compact 3.8B reasoning powerhouse tuned for step-by-step analysis, logic, and concise technical documentation.",
+    "fileName": "Phi-3.5-mini-instruct-Q4_K_M.gguf",
+    "huggingfaceUrl": "https://huggingface.co/bartowski/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf"
+  }
+]
