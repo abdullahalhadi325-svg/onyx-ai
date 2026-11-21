@@ -1,3 +1,4 @@
+import { matchOnyxIdentityIntent } from './onyxIdentity';
 import {
   BENGALI_SYSTEM_INSTRUCTION,
   hasBengaliInConversation,
@@ -220,6 +221,11 @@ export async function generateWithNativeLocalLLM(params: {
 
   const recentHistory = sanitizeConversationHistory(params.history);
   const trimmedMessage = params.message.trim();
+  const identityReply = matchOnyxIdentityIntent(trimmedMessage);
+  if (identityReply) {
+    params.onToken?.(identityReply, identityReply);
+    return { ok: true, text: identityReply };
+  }
   const isBengali = hasBengaliInConversation(trimmedMessage, recentHistory);
   const baseSystemPrompt =
     params.systemPrompt.trim() || DEFAULT_GLOBAL_SYSTEM_PROMPT;

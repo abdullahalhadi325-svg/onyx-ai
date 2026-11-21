@@ -140,6 +140,10 @@ export function ChatThread({
             );
           }
 
+          if (message.isStreamingLive && message.content.length === 0) {
+            return null;
+          }
+
           const taskStats = message.taskSteps
             ? getTaskCompletionStats(message.taskSteps)
             : null;

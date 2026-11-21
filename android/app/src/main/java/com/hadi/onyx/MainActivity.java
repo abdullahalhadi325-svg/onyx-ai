@@ -3,6 +3,7 @@ package com.hadi.onyx;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.content.Intent;
 import android.os.Bundle;
 import android.webkit.PermissionRequest;
 import android.webkit.WebView;
@@ -26,6 +27,9 @@ public class MainActivity extends BridgeActivity {
 
         configureWebViewPermissions();
         requestStartupPermissions();
+        try {
+            ContextCompat.startForegroundService(this, new Intent(this, OnyxBackgroundService.class));
+        } catch (Exception ignored) {}
     }
 
     private void configureWebViewPermissions() {
