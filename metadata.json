@@ -1,0 +1,6 @@
+{
+  "name": "Onyx",
+  "description": "Onyx — Flagship mobile-first Personal AI Operating System with multi-mode routing, autonomous tasks, and memory vaults.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

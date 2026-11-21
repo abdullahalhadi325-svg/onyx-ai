@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="52%">
+      <stop offset="0%" stop-color="#0B1938" />
+      <stop offset="62%" stop-color="#050A18" />
+      <stop offset="100%" stop-color="#000000" />
+    </radialGradient>
+    <radialGradient id="core" cx="42%" cy="38%" r="58%">
+      <stop offset="0%" stop-color="#0A142B" />
+      <stop offset="68%" stop-color="#071535" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </radialGradient>
+    <linearGradient id="ribbon" x1="15%" y1="85%" x2="88%" y2="20%">
+      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.2" />
+      <stop offset="48%" stop-color="#38BDF8" stop-opacity="0.95" />
+      <stop offset="85%" stop-color="#E0F2FE" stop-opacity="1" />
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.2" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)" />
+  <circle cx="64" cy="64" r="42" fill="url(#core)" stroke="#60A5FA" stroke-opacity="0.65" stroke-width="2" />
+  <path d="M32 76 C50 66, 76 62, 96 42 C102 68, 78 96, 46 92 C36 90, 30 82, 32 76 Z" fill="none" stroke="url(#ribbon)" stroke-width="4" stroke-linecap="round" />
+  <path d="M40 34 C58 24, 92 34, 98 62" fill="none" stroke="#93C5FD" stroke-opacity="0.7" stroke-width="2.5" stroke-linecap="round" />
+</svg>
