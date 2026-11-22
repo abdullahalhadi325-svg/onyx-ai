@@ -813,6 +813,17 @@ export default function App() {
           usageOut = estimateTokenCount(answerText);
         }
       } else {
+        // Persist cloud user & assistant messages to Supabase
+        if (authUser && !temporary) {
+          void saveActiveChatMessage({
+            userId: authUser.id,
+            sessionId,
+            role: "user",
+            content: rawUserPrompt,
+            thinkingLog: null,
+          });
+        }
+
         const payload = buildChatRequestPayload({
           userId: authUser?.id ?? null,
           message: prompt,
@@ -842,6 +853,17 @@ export default function App() {
             cloudOutcome.response.sources.length > 0
               ? cloudOutcome.response.sources
               : undefined;
+
+          if (authUser && !temporary && answerText) {
+            void saveActiveChatMessage({
+              userId: authUser.id,
+              sessionId,
+              role: "assistant",
+              content: answerText,
+              thinkingLog: thinkingLog ?? null,
+              mediaCards,
+            });
+          }
           usageIn = cloudOutcome.response.usage?.inputTokens ?? estimatedIn;
           usageOut =
             cloudOutcome.response.usage?.outputTokens ??
@@ -1167,9 +1189,15 @@ export default function App() {
   }
 
   async function handleSignOut() {
+    hydratedScopeRef.current = null;
+    setIsWorkspaceHydrated(false);
+    try {
+      window.localStorage.removeItem("onyx_user_display_name");
+    } catch {}
     if (authUser) {
       await supabase.auth.signOut();
     }
+    setChats([]);
     setAuthUser(null);
     setIsGuestMode(false);
     setIsSettingsOpen(false);
