@@ -28,17 +28,6 @@ export function HomeView({
   return (
     <div className="onyx-hud-grid relative z-10 mx-auto flex w-full max-w-[640px] flex-1 flex-col items-center justify-center px-6 pt-14 pb-6">
       <div className="flex w-full flex-col items-center text-center">
-        {/* Live Telemetry Status Pill */}
-        <div
-          style={{ animationDelay: '0ms' }}
-          className="onyx-glass-pill onyx-spring-in mb-7 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5"
-        >
-          <span className="onyx-status-dot h-1.5 w-1.5 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
-          <span className="font-mono text-[10px] font-medium tracking-[0.16em] text-zinc-300 uppercase">
-            {isTemporaryChat ? 'STEALTH · TEMP SESSION' : 'ONYX CORE · ONLINE'}
-          </span>
-        </div>
-
         {/* Living Jarvis HUD Sapphire Energy Orb */}
         <div className="onyx-spring-in" style={{ animationDelay: '70ms' }}>
           <OnyxOrb size="hero" animate />
