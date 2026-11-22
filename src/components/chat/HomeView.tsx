@@ -26,55 +26,66 @@ export function HomeView({
   isTemporaryChat,
 }: HomeViewProps) {
   return (
-    <div className="relative z-10 mx-auto flex w-full max-w-[640px] flex-1 flex-col items-center justify-center px-6 pt-16 pb-6">
+    <div className="onyx-hud-grid relative z-10 mx-auto flex w-full max-w-[640px] flex-1 flex-col items-center justify-center px-6 pt-14 pb-6">
       <div className="flex w-full flex-col items-center text-center">
-        {/* Living Pure CSS/SVG Sapphire Energy Orb */}
-        <div className="onyx-fade-up" style={{ animationDelay: '0ms' }}>
+        {/* Live Telemetry Status Pill */}
+        <div
+          style={{ animationDelay: '0ms' }}
+          className="onyx-glass-pill onyx-spring-in mb-7 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5"
+        >
+          <span className="onyx-status-dot h-1.5 w-1.5 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+          <span className="font-mono text-[10px] font-medium tracking-[0.16em] text-zinc-300 uppercase">
+            {isTemporaryChat ? 'STEALTH · TEMP SESSION' : 'ONYX CORE · ONLINE'}
+          </span>
+        </div>
+
+        {/* Living Jarvis HUD Sapphire Energy Orb */}
+        <div className="onyx-spring-in" style={{ animationDelay: '70ms' }}>
           <OnyxOrb size="hero" animate />
         </div>
 
-        {/* Muted Sans Greeting + Claude-style Editorial Serif Display Heading */}
+        {/* Crisp Greeting + Architectural Geometric Sans Heading */}
         <p
-          style={{ animationDelay: '80ms' }}
-          className="mt-7 font-serif text-xl font-medium tracking-wide bg-gradient-to-r from-white via-blue-200 to-blue-400 bg-clip-text text-transparent onyx-fade-up"
+          style={{ animationDelay: '130ms' }}
+          className="mt-8 font-mono text-xs font-medium tracking-[0.14em] text-sky-300/90 uppercase onyx-spring-in"
         >
-          Hello {greetingName}
+          Hello, {greetingName}
         </p>
 
         <h1
-          style={{ animationDelay: '140ms' }}
-          className="mt-2 max-w-[340px] font-serif text-3xl font-medium leading-[1.16] tracking-tight text-white text-balance sm:max-w-[460px] sm:text-4xl onyx-fade-up"
+          style={{ animationDelay: '180ms' }}
+          className="mt-2.5 max-w-[330px] bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text font-sans text-[28px] font-semibold leading-[1.14] tracking-[-0.03em] text-transparent text-balance sm:max-w-[460px] sm:text-4xl onyx-spring-in"
         >
-          How can I help you today?
+          Ready for your command.
         </h1>
 
         {isTemporaryChat && (
           <p
-            style={{ animationDelay: '175ms' }}
-            className="mt-3 inline-flex items-center justify-center gap-1.5 font-sans text-xs text-zinc-400 onyx-fade-up"
+            style={{ animationDelay: '210ms' }}
+            className="mt-3 inline-flex items-center justify-center gap-1.5 font-mono text-[11px] text-zinc-400 onyx-spring-in"
           >
             <Detective
               size={14}
               weight="regular"
-              className="shrink-0 text-zinc-300"
+              className="shrink-0 text-sky-400"
             />
-            <span>Temporary chat · Not saved to history</span>
+            <span>Memory disabled · Not saved to history</span>
           </p>
         )}
 
-        {/* Single Compact Chat | Task Pill + Tiny EN/BN Toggle */}
+        {/* Liquid Glass Mode Switcher + Language Pill */}
         <div
-          style={{ animationDelay: '200ms' }}
-          className="mt-7 flex items-center justify-center gap-2 onyx-fade-up"
+          style={{ animationDelay: '240ms' }}
+          className="mt-8 flex items-center justify-center gap-2.5 onyx-spring-in"
         >
           <div
             role="tablist"
             aria-label="Interaction mode"
-            className="relative grid grid-cols-2 rounded-full border border-white/[0.09] bg-[#111218]/90 p-1"
+            className="onyx-liquid-glass relative grid grid-cols-2 rounded-full p-1"
           >
             <div
               aria-hidden="true"
-              className={`pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-[#2563EB] shadow-md shadow-blue-600/30 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-gradient-to-b from-sky-500/90 to-blue-600/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_14px_rgba(37,99,235,0.45)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 inputMode === 'task' ? 'translate-x-full' : 'translate-x-0'
               }`}
             />
@@ -83,7 +94,7 @@ export function HomeView({
               role="tab"
               aria-selected={inputMode === 'chat'}
               onClick={() => onChangeInputMode('chat')}
-              className={`relative z-10 flex h-8 min-w-[78px] items-center justify-center gap-1.5 rounded-full px-3 font-sans text-xs font-medium whitespace-nowrap active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-transform duration-150 ${
+              className={`relative z-10 flex h-8 min-w-[82px] items-center justify-center gap-1.5 rounded-full px-3 font-sans text-xs font-medium whitespace-nowrap active:scale-[0.95] transition-transform duration-150 ${
                 inputMode === 'chat'
                   ? 'text-white'
                   : 'text-zinc-400 hover:text-white'
@@ -97,7 +108,7 @@ export function HomeView({
               role="tab"
               aria-selected={inputMode === 'task'}
               onClick={() => onChangeInputMode('task')}
-              className={`relative z-10 flex h-8 min-w-[78px] items-center justify-center gap-1.5 rounded-full px-3 font-sans text-xs font-medium whitespace-nowrap active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-transform duration-150 ${
+              className={`relative z-10 flex h-8 min-w-[82px] items-center justify-center gap-1.5 rounded-full px-3 font-sans text-xs font-medium whitespace-nowrap active:scale-[0.95] transition-transform duration-150 ${
                 inputMode === 'task'
                   ? 'text-white'
                   : 'text-zinc-400 hover:text-white'
@@ -114,9 +125,9 @@ export function HomeView({
             aria-label={`Switch dictation language (current: ${
               speechLang === 'en-US' ? 'English' : 'Bangla'
             })`}
-            className="flex h-10 items-center gap-1.5 rounded-full border border-white/[0.09] bg-[#111218]/90 px-3 font-sans text-xs font-medium text-zinc-300 hover:border-blue-400/35 hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-transform duration-150"
+            className="onyx-liquid-glass flex h-10 items-center gap-1.5 rounded-full px-3.5 font-mono text-xs font-medium text-zinc-200 hover:border-sky-400/40 hover:text-white active:scale-[0.95] transition-transform duration-150"
           >
-            <Translate size={14} weight="regular" className="text-blue-400" />
+            <Translate size={14} weight="regular" className="text-sky-400" />
             <span>{speechLang === 'en-US' ? 'EN' : 'BN'}</span>
           </button>
         </div>

@@ -257,6 +257,35 @@ export function OnyxOrb({
             strokeOpacity="0.12"
             strokeWidth="0.75"
           />
+
+          {/* Precision Jarvis HUD Telemetry Rings (Hero & Boot only) */}
+          {(size === "hero" || size === "boot") && (
+            <>
+              <g className={animate ? "onyx-hud-spin-cw" : ""}>
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="74"
+                  stroke="#38BDF8"
+                  strokeOpacity="0.34"
+                  strokeWidth="1"
+                  strokeDasharray="34 18 8 18"
+                  strokeLinecap="round"
+                />
+              </g>
+              <g className={animate ? "onyx-hud-spin-ccw" : ""}>
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="80"
+                  stroke="#E0F2FE"
+                  strokeOpacity="0.18"
+                  strokeWidth="0.85"
+                  strokeDasharray="2 10"
+                />
+              </g>
+            </>
+          )}
         </svg>
       </div>
     </div>
