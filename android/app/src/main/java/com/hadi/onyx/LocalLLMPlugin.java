@@ -1,6 +1,13 @@
 package com.hadi.onyx;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.OpenableColumns;
+import androidx.activity.result.ActivityResult;
+import com.getcapacitor.annotation.ActivityCallback;
 import android.os.StatFs;
 import android.util.Log;
 
@@ -823,4 +830,66 @@ public class LocalLLMPlugin extends Plugin {
         inferenceExecutor.shutdownNow();
         super.handleOnDestroy();
     }
+
+    @PluginMethod
+    public void importModelFromFile(PluginCall call) {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        startActivityForResult(call, intent, "handleImportFileResult");
+    }
+
+    @ActivityCallback
+    private void handleImportFileResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null || result.getData().getData() == null) {
+            call.reject("File selection cancelled.");
+            return;
+        }
+        Uri uri = result.getData().getData();
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                String rawName = "custom_model_" + System.currentTimeMillis() + ".gguf";
+                try (Cursor cursor = getContext().getContentResolver().query(uri, null, null, null, null)) {
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int nameIdx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                        if (nameIdx >= 0) {
+                            String found = cursor.getString(nameIdx);
+                            if (found != null && !found.trim().isEmpty()) rawName = found.trim();
+                        }
+                    }
+                }
+                if (!rawName.toLowerCase(Locale.ROOT).endsWith(".gguf")) {
+                    call.reject("Please select a valid .gguf model file.");
+                    return;
+                }
+                String safeName = rawName.replaceAll("[^a-zA-Z0-9._-]", "_");
+                if (!safeName.toLowerCase(Locale.ROOT).endsWith(".gguf")) safeName = safeName + ".gguf";
+                File outFile = new File(getModelsDir(), safeName);
+                long copied = 0L;
+                try (InputStream in = getContext().getContentResolver().openInputStream(uri);
+                     FileOutputStream out = new FileOutputStream(outFile)) {
+                    if (in == null) {
+                        call.reject("Cannot read selected file.");
+                        return;
+                    }
+                    byte[] buf = new byte[DOWNLOAD_BUFFER_SIZE];
+                    int read;
+                    while ((read = in.read(buf)) != -1) {
+                        out.write(buf, 0, read);
+                        copied += read;
+                    }
+                    out.flush();
+                }
+                JSObject res = new JSObject();
+                res.put("imported", true);
+                res.put("fileName", safeName);
+                res.put("sizeBytes", copied);
+                call.resolve(res);
+            } catch (Exception e) {
+                call.reject("Import failed: " + e.getMessage());
+            }
+        });
+    }
+
 }

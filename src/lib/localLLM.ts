@@ -102,6 +102,14 @@ export async function getNativeDownloadedModels(): Promise<LocalLLMInventoryResp
   return plugin.getDownloadedModels();
 }
 
+export async function importNativeModelFromFile(): Promise<{ imported: boolean; fileName: string; sizeBytes: number }> {
+  const plugin = getNativeLocalLLMPlugin();
+  if (!plugin || typeof plugin.importModelFromFile !== "function") {
+    throw new Error("Native file import is only available in the Android APK.");
+  }
+  return plugin.importModelFromFile();
+}
+
 export async function startNativeModelDownload(params: {
   url: string;
   fileName: string;

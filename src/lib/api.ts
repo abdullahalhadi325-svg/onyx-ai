@@ -132,8 +132,19 @@ export function buildChatRequestPayload(params: {
 
   const forceGemini = hasVisionImage || isBengaliConversation;
 
+  const contextualMessage =
+    recentHistory.length > 0
+      ? "[Previous Conversation]\n" +
+        recentHistory
+          .slice(-10)
+          .map((m) => (m.role === "user" ? "User: " : "Assistant: ") + m.content)
+          .join("\n") +
+        "\n\n[Current Message]\nUser: " +
+        trimmedMessage
+      : trimmedMessage;
+
   const payload: BackendChatRequest = {
-    message: params.message,
+    message: contextualMessage,
     messages: fullMessages,
     history: recentHistory,
     mode: mapRoutingModeToApiMode(params.routingMode, params.inputMode),

@@ -31,6 +31,7 @@ import {
   loadNativeModel,
   parseModelSizeToBytes,
   pauseNativeModelDownload,
+  importNativeModelFromFile,
   startNativeModelDownload,
   subscribeToNativeDownloadProgress,
   unloadNativeModel,
@@ -135,6 +136,55 @@ export function LocalAIHubSheet({
   );
   const [isRefreshingStorage, setIsRefreshingStorage] = useState(false);
   const [hubNotice, setHubNotice] = useState<string | null>(null);
+  const [customModelUrl, setCustomModelUrl] = useState("");
+  const [isImportingFile, setIsImportingFile] = useState(false);
+
+  const customDownloadedModels = useMemo(() => {
+    const presetFiles = new Set(LOCAL_MODELS.map((m) => m.fileName));
+    return downloadedModels.filter((d) => !presetFiles.has(d.fileName));
+  }, [downloadedModels]);
+
+  async function handlePickLocalGgufFile() {
+    if (!nativeAvailable) {
+      setHubNotice("Phone file import works inside the installed Android APK.");
+      return;
+    }
+    setIsImportingFile(true);
+    setHubNotice("Copying .gguf file to Onyx secure storage...");
+    try {
+      const res = await importNativeModelFromFile();
+      if (res?.imported) {
+        setHubNotice(`Imported ${res.fileName} successfully! Tap Load Model below.`);
+        await refreshDeviceInventory();
+      }
+    } catch (err) {
+      setHubNotice(err instanceof Error ? err.message : "Could not import .gguf file.");
+    } finally {
+      setIsImportingFile(false);
+    }
+  }
+
+  async function handleDownloadCustomUrl() {
+    const trimmed = customModelUrl.trim();
+    if (!isValidHttpUrl(trimmed) || !trimmed.toLowerCase().includes(".gguf")) {
+      setHubNotice("Enter a valid direct .gguf download URL (e.g. HuggingFace resolve/main/...gguf).");
+      return;
+    }
+    const rawSegment = trimmed.split("?")[0].split("/").pop() || `custom_${Date.now()}.gguf`;
+    const safeFileName = rawSegment.replace(/[^a-zA-Z0-9._-]/g, "_");
+    setCustomModelUrl("");
+    setHubNotice(`Starting download for ${safeFileName}...`);
+    try {
+      await startNativeModelDownload({
+        url: trimmed,
+        fileName: safeFileName,
+        modelId: `custom-${safeFileName}`,
+      });
+      await refreshDeviceInventory();
+    } catch (err) {
+      setHubNotice(err instanceof Error ? err.message : "Custom URL download failed.");
+    }
+  }
 
   const refreshDeviceInventory = useCallback(async () => {
     setIsRefreshingStorage(true);
@@ -664,6 +714,103 @@ export function LocalAIHubSheet({
                         style={{ width: `${storageUsedPercent}%` }}
                       />
                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Custom .GGUF Importer (Phone Storage + Direct URL) */}
+              <div className="space-y-2.5 rounded-2xl border border-white/[0.08] bg-[#121216] p-3.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="font-sans text-xs font-semibold text-white">
+                      Import Custom .GGUF Model
+                    </p>
+                    <p className="font-sans text-[11px] text-zinc-400">
+                      Load from phone storage or direct HuggingFace URL
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isImportingFile}
+                    onClick={() => void handlePickLocalGgufFile()}
+                    className="shrink-0 rounded-xl bg-[#2563EB] px-3 py-1.5 font-sans text-xs font-medium text-white hover:bg-blue-500 active:scale-[0.97] disabled:opacity-50"
+                  >
+                    {isImportingFile ? "Importing..." : "+ Pick File"}
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="url"
+                    value={customModelUrl}
+                    onChange={(e) => setCustomModelUrl(e.target.value)}
+                    placeholder="https://huggingface.co/.../model.gguf"
+                    className="h-9 min-w-0 flex-1 rounded-xl border border-white/10 bg-[#18181D] px-3 font-mono text-[11px] text-white placeholder:text-zinc-500 focus:border-blue-500/60 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleDownloadCustomUrl()}
+                    className="h-9 shrink-0 rounded-xl bg-white/[0.08] px-3 font-sans text-xs font-medium text-white hover:bg-white/[0.14] active:scale-[0.97]"
+                  >
+                    URL
+                  </button>
+                </div>
+
+                {customDownloadedModels.length > 0 && (
+                  <div className="space-y-2 pt-1.5 border-t border-white/[0.06]">
+                    {customDownloadedModels.map((cm) => {
+                      const isLoaded = loadedNativeModel === cm.fileName;
+                      return (
+                        <div
+                          key={cm.fileName}
+                          className="flex items-center justify-between gap-2 rounded-xl bg-[#18181D] px-3 py-2"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate font-mono text-[11px] text-zinc-100">
+                              {cm.fileName}
+                            </p>
+                            <p className="font-mono text-[10px] text-zinc-400">
+                              {formatBytesCompact(cm.sizeBytes)}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (isLoaded) {
+                                  await unloadNativeModel();
+                                  onChangeLoadedNativeModel(null);
+                                } else {
+                                  setHubNotice(`Loading ${cm.fileName}...`);
+                                  const res = await loadNativeModel({ fileName: cm.fileName });
+                                  if (res?.loaded) {
+                                    onChangeLoadedNativeModel(cm.fileName);
+                                    setHubNotice(`${cm.fileName} is now active in RAM!`);
+                                  }
+                                }
+                              }}
+                              className={`rounded-lg px-2.5 py-1 text-[11px] font-medium ${isLoaded ? "bg-emerald-500/20 text-emerald-300" : "bg-[#2563EB] text-white"}`}
+                            >
+                              {isLoaded ? "Unload" : "Load"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (isLoaded) {
+                                  await unloadNativeModel();
+                                  onChangeLoadedNativeModel(null);
+                                }
+                                await deleteNativeModel(cm.fileName);
+                                await refreshDeviceInventory();
+                              }}
+                              className="rounded-lg bg-white/[0.06] p-1.5 text-zinc-400 hover:text-red-400"
+                            >
+                              <Trash size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

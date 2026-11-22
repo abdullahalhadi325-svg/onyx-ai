@@ -261,6 +261,7 @@ export interface NativeLocalLLMPlugin {
     nCtx: number;
     nThreads: number;
   }>;
+  importModelFromFile?: () => Promise<{ imported: boolean; fileName: string; sizeBytes: number }>;
   unloadModel(): Promise<{ unloaded: boolean }>;
   generate(options: {
     requestId?: string;

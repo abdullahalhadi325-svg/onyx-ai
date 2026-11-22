@@ -28,6 +28,7 @@ export function AuthScreen({
   onAuthSuccess,
 }: AuthScreenProps) {
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -63,19 +64,31 @@ export function AuthScreen({
     setIsSubmitting(true);
     try {
       if (authMode === 'signin') {
+        const trimmedName = fullName.trim();
+        if (trimmedName) {
+          try { window.localStorage.setItem("onyx_user_display_name", trimmedName); } catch {}
+        }
         const { data, error } = await supabase.auth.signInWithPassword({
           email: trimmedEmail,
           password,
         });
+        if (!error && data.session && trimmedName) {
+          await supabase.auth.updateUser({ data: { full_name: trimmedName } }).catch(() => {});
+        }
         if (error) {
           setErrorMessage(error.message);
         } else if (data.session) {
           onAuthSuccess?.();
         }
       } else {
+        const trimmedName = fullName.trim();
+        if (trimmedName) {
+          try { window.localStorage.setItem("onyx_user_display_name", trimmedName); } catch {}
+        }
         const { data, error } = await supabase.auth.signUp({
           email: trimmedEmail,
           password,
+          options: trimmedName ? { data: { full_name: trimmedName } } : undefined,
         });
         if (error) {
           setErrorMessage(error.message);
@@ -203,6 +216,24 @@ export function AuthScreen({
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div className="space-y-1.5">
               <label
+                htmlFor="onyx-auth-name"
+                className="block text-xs font-medium text-zinc-300"
+              >
+                Your Name
+              </label>
+              <input
+                id="onyx-auth-name"
+                type="text"
+                autoComplete="name"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                placeholder="Enter your name"
+                className="h-11 w-full rounded-2xl border border-white/10 bg-[#18181D] px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-blue-500/60 focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-colors duration-200"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label
                 htmlFor="onyx-auth-email"
                 className="block text-xs font-medium text-zinc-300"
               >
@@ -301,7 +332,13 @@ export function AuthScreen({
           <div className="mt-4 space-y-2.5 pt-1">
             <button
               type="button"
-              onClick={onContinueAsGuest}
+              onClick={() => {
+                const trimmedName = fullName.trim();
+                if (trimmedName) {
+                  try { window.localStorage.setItem("onyx_user_display_name", trimmedName); } catch {}
+                }
+                onContinueAsGuest();
+              }}
               className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-[#1C1C22] px-4 text-sm font-medium text-white/85 hover:bg-[#27272F] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 transition-transform duration-150"
             >
               <User size={16} weight="regular" />

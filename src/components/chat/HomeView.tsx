@@ -36,7 +36,7 @@ export function HomeView({
         {/* Muted Sans Greeting + Claude-style Editorial Serif Display Heading */}
         <p
           style={{ animationDelay: '80ms' }}
-          className="mt-7 font-sans text-sm font-normal text-zinc-400 onyx-fade-up"
+          className="mt-7 font-serif text-xl font-medium tracking-wide bg-gradient-to-r from-white via-blue-200 to-blue-400 bg-clip-text text-transparent onyx-fade-up"
         >
           Hello {greetingName}
         </p>
