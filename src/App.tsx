@@ -92,15 +92,25 @@ function deriveGreetingFirstName(
   email: string | null,
   isGuest: boolean
 ): string {
-  if (isGuest) {
-    return 'Hadi';
+  const savedCustomName =
+    typeof window !== "undefined"
+      ? window.localStorage.getItem("onyx_user_display_name")?.trim() || ""
+      : "";
+  if (savedCustomName) {
+    return savedCustomName.split(/\s+/)[0];
   }
-  const combined = `${displayName} ${email ?? ''}`.toLowerCase();
-  if (combined.includes('hadi')) {
-    return 'Hadi';
+  if (isGuest) {
+    return "Guest";
   }
   const firstWord = displayName.trim().split(/\s+/)[0];
-  return firstWord || 'Hadi';
+  if (firstWord && firstWord.toLowerCase() !== "guest") {
+    return firstWord;
+  }
+  if (email && email.includes("@")) {
+    const prefix = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, " ").trim().split(/\s+/)[0];
+    if (prefix) return prefix.charAt(0).toUpperCase() + prefix.slice(1);
+  }
+  return "there";
 }
 
 function mergeRemoteAndLocalChats(
@@ -212,6 +222,7 @@ export default function App() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scopeKey = authUser?.id ? `user_${authUser.id}` : 'guest_local';
   const latestSnapshotRef = useRef<PersistedWorkspaceSnapshot | null>(null);
+  const hydratedScopeRef = useRef<string | null>(null);
 
   const triggerBootSplash = useCallback((reason: BootTriggerReason) => {
     setBootState((prev) => ({
@@ -239,7 +250,7 @@ export default function App() {
   // Flush synchronously on minimize/pagehide and trigger resume splash if minimized > 2 min
   useEffect(() => {
     function flushSyncBackup() {
-      if (isWorkspaceHydrated && latestSnapshotRef.current) {
+      if (isWorkspaceHydrated && hydratedScopeRef.current === scopeKey && latestSnapshotRef.current) {
         savePersistedWorkspaceSyncBackup(scopeKey, {
           ...latestSnapshotRef.current,
           updatedAt: Date.now(),
@@ -261,9 +272,16 @@ export default function App() {
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    function handleResumeFreshChat() {
+      if (document.visibilityState === "visible") {
+        setActiveChatId(null); // fresh chat on resume
+      }
+    }
+    document.addEventListener("visibilitychange", handleResumeFreshChat);
     window.addEventListener('pagehide', flushSyncBackup);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleResumeFreshChat);
       window.removeEventListener('pagehide', flushSyncBackup);
     };
   }, [isWorkspaceHydrated, scopeKey, triggerBootSplash]);
@@ -334,7 +352,10 @@ export default function App() {
     }
 
     let cancelled = false;
+    hydratedScopeRef.current = null;
     setIsWorkspaceHydrated(false);
+    setChats([]);
+    setActiveChatId(null);
     setIsLoadingChats(true);
 
     async function hydrateWorkspace() {
@@ -349,7 +370,7 @@ export default function App() {
           ? localSnapshot.chats
           : [];
         setChats(resolvedChats);
-        setActiveChatId(localSnapshot.activeChatId ?? null);
+        setActiveChatId(null);
         setInputValue(localSnapshot.draftInput ?? '');
         setEngineMode(localSnapshot.engineMode ?? 'cloud');
         setRoutingMode(localSnapshot.routingMode ?? 'auto');
@@ -389,6 +410,7 @@ export default function App() {
       }
 
       if (!cancelled) {
+        hydratedScopeRef.current = scopeKey;
         setIsLoadingChats(false);
         setIsWorkspaceHydrated(true);
       }
@@ -402,7 +424,7 @@ export default function App() {
 
   // Persist workspace to IndexedDB + synchronous localStorage backup whenever state changes
   useEffect(() => {
-    if (!isWorkspaceHydrated) {
+    if (!isWorkspaceHydrated || hydratedScopeRef.current !== scopeKey) {
       return;
     }
 

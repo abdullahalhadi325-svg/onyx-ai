@@ -36,6 +36,29 @@ export function AuthScreen({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
+  async function handleForgotPassword() {
+    setErrorMessage(null);
+    setInfoMessage(null);
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !isValidEmail(trimmedEmail)) {
+      setErrorMessage("Enter your valid email address above first to reset password.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail);
+      if (error) {
+        setErrorMessage(error.message);
+      } else {
+        setInfoMessage("Password reset link sent! Check your email inbox.");
+      }
+    } catch {
+      setErrorMessage("Could not send reset link. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
@@ -263,12 +286,24 @@ export function AuthScreen({
             </div>
 
             <div className="space-y-1.5">
-              <label
-                htmlFor="onyx-auth-password"
-                className="block text-xs font-medium text-zinc-300"
-              >
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="onyx-auth-password"
+                  className="block text-xs font-medium text-zinc-300"
+                >
+                  Password
+                </label>
+                {authMode === "signin" && (
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => void handleForgotPassword()}
+                    className="text-xs font-medium text-blue-400 hover:text-blue-300 disabled:opacity-50"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <LockSimple
                   size={17}
