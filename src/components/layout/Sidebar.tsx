@@ -128,7 +128,7 @@ export function Sidebar({
               onNewChat();
               onClose();
             }}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-full onyx-accent-btn px-4 font-sans text-sm font-medium text-white shadow-md shadow-blue-600/20  active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-transform duration-150"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-full onyx-accent-btn px-4 font-sans text-sm font-medium text-white shadow-md   active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150"
           >
             <Plus size={16} weight="bold" />
             <span>New Chat</span>
@@ -153,7 +153,7 @@ export function Sidebar({
             <span
               className={`rounded-full px-2 py-0.5 font-mono text-[10px] ${
                 engineMode === 'local'
-                  ? 'bg-blue-500/30 text-blue-200'
+                  ? 'bg-[var(--onyx-accent)]/30 text-[var(--onyx-accent-soft)]'
                   : 'bg-white/[0.06] text-zinc-400'
               }`}
             >

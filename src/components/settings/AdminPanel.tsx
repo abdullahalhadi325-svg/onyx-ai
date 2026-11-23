@@ -137,7 +137,7 @@ export function AdminPanel({
         className="space-y-3 bg-[#0D0D10] px-4 py-3.5"
       >
         <div className="flex items-start gap-2.5">
-          <LockKey size={16} weight="regular" className="mt-0.5 shrink-0 text-blue-400" />
+          <LockKey size={16} weight="regular" className="mt-0.5 shrink-0 text-[var(--onyx-accent)]" />
           <div className="min-w-0">
             <div className="font-sans text-xs font-medium text-white">
               {hasExistingPin ? 'Admin PIN Required' : 'Initialize Admin PIN'}
@@ -179,7 +179,7 @@ export function AdminPanel({
 
         <button
           type="submit"
-          className="flex h-9 w-full items-center justify-center rounded-xl bg-[#2563EB] font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97] transition-transform duration-150"
+          className="flex h-9 w-full items-center justify-center rounded-xl onyx-accent-btn font-sans text-xs font-medium text-white hover:bg-[var(--onyx-accent)] active:scale-[0.97] transition-transform duration-150"
         >
           {hasExistingPin ? 'Unlock Admin Panel' : 'Save Admin PIN & Unlock'}
         </button>
@@ -237,14 +237,14 @@ export function AdminPanel({
                 onClick={() => handleToggleProvider(key)}
                 className={`flex h-9 items-center justify-between rounded-xl px-3 font-sans text-xs font-medium active:scale-[0.97] transition-colors duration-150 ${
                   active
-                    ? 'bg-[#2563EB]/20 text-blue-200'
+                    ? 'onyx-accent-btn/20 text-[var(--onyx-accent-soft)]'
                     : 'bg-[#15151B] text-zinc-500 hover:text-zinc-300'
                 }`}
               >
                 <span>{label}</span>
                 <span
                   className={`h-2 w-2 rounded-full ${
-                    active ? 'bg-blue-400' : 'bg-zinc-600'
+                    active ? 'bg-[var(--onyx-accent)]' : 'bg-zinc-600'
                   }`}
                 />
               </button>
@@ -370,14 +370,14 @@ export function AdminPanel({
       </div>
 
       {saveNotice && (
-        <p className="font-sans text-[11px] text-blue-300">{saveNotice}</p>
+        <p className="font-sans text-[11px] text-[var(--onyx-accent-soft)]">{saveNotice}</p>
       )}
 
       <button
         type="button"
         disabled={isSaving}
         onClick={() => void handleSaveConfig()}
-        className="flex h-10 w-full items-center justify-center rounded-xl bg-[#2563EB] font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97] disabled:opacity-50 transition-transform duration-150"
+        className="flex h-10 w-full items-center justify-center rounded-xl onyx-accent-btn font-sans text-xs font-medium text-white hover:bg-[var(--onyx-accent)] active:scale-[0.97] disabled:opacity-50 transition-transform duration-150"
       >
         {isSaving ? 'Syncing Config...' : 'Save Live Admin Config'}
       </button>

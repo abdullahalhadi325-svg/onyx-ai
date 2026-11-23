@@ -77,11 +77,11 @@ export function BootSplash({
       {/* Centered soft sapphire light bloom */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 left-1/2 h-[320px] w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1D4ED8]/28 blur-[100px] onyx-orb-aura"
+        className="pointer-events-none absolute top-1/2 left-1/2 h-[320px] w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[100px]" style={{ background: "rgba(var(--onyx-accent-rgb), calc(0.32 * var(--onyx-glow-scale)))" }} data-glow="1 onyx-orb-aura"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 left-1/2 h-[170px] w-[170px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#38BDF8]/20 blur-[64px]"
+        className="pointer-events-none absolute top-1/2 left-1/2 h-[170px] w-[170px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[64px]" style={{ background: "rgba(var(--onyx-accent-rgb), calc(0.2 * var(--onyx-glow-scale)))" }} data-glow="2"
       />
 
       {/* Silent Animated Onyx Orb Reveal */}

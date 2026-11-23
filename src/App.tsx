@@ -1242,8 +1242,8 @@ export default function App() {
           hasActiveConversation ? 'opacity-10' : 'opacity-100'
         }`}
       >
-        <div className="absolute -bottom-36 left-1/2 h-[380px] w-[min(820px,165vw)] -translate-x-1/2 rounded-full bg-[#1D4ED8]/42 blur-[115px]" />
-        <div className="absolute -bottom-16 left-1/2 h-[220px] w-[min(520px,125vw)] -translate-x-1/2 rounded-full bg-[#38BDF8]/26 blur-[85px]" />
+        <div className="absolute -bottom-36 left-1/2 h-[380px] w-[min(820px,165vw)] -translate-x-1/2 rounded-full blur-[115px]" style={{ background: "rgba(var(--onyx-accent-rgb), calc(0.38 * var(--onyx-glow-scale)))" }} />
+        <div className="absolute -bottom-16 left-1/2 h-[220px] w-[min(520px,125vw)] -translate-x-1/2 rounded-full blur-[85px]" style={{ background: "rgba(var(--onyx-accent-rgb), calc(0.22 * var(--onyx-glow-scale)))" }} />
       </div>
 
       <TopBar
@@ -1265,9 +1265,9 @@ export default function App() {
       {/* Optional Live Admin Announcement Banner */}
       {visibleAnnouncement && (
         <div className="relative z-20 mx-auto mt-16 w-full max-w-[680px] px-4">
-          <div className="flex items-center justify-between gap-2 rounded-2xl bg-[#111524] px-3.5 py-2 text-xs text-blue-100">
+          <div className="flex items-center justify-between gap-2 rounded-2xl onyx-bento-card-subtle px-3.5 py-2 text-xs text-zinc-100">
             <span className="flex min-w-0 items-center gap-2">
-              <Megaphone size={14} weight="fill" className="shrink-0 text-blue-400" />
+              <Megaphone size={14} weight="fill" className="shrink-0 text-[var(--onyx-accent)]" />
               <span className="truncate">{visibleAnnouncement}</span>
             </span>
             <button

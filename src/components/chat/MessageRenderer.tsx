@@ -135,17 +135,17 @@ export function OnyxThinkingPulse({
 
       <div className="inline-flex items-center gap-3 rounded-2xl bg-[#10121A] px-3.5 py-2.5">
         <OnyxOrb size="mini" animate />
-        <span className="font-sans text-xs font-medium text-blue-100/90 onyx-status-shimmer">
+        <span className="font-sans text-xs font-medium text-zinc-100 onyx-status-shimmer">
           {statusLabel}
         </span>
         <span aria-hidden="true" className="flex items-center gap-1 pl-0.5">
           <span
             style={{ animationDelay: '0ms' }}
-            className="h-1.5 w-1.5 rounded-full bg-blue-400 onyx-typing-dot"
+            className="h-1.5 w-1.5 rounded-full bg-[var(--onyx-accent)] onyx-typing-dot"
           />
           <span
             style={{ animationDelay: '150ms' }}
-            className="h-1.5 w-1.5 rounded-full bg-blue-300 onyx-typing-dot"
+            className="h-1.5 w-1.5 rounded-full bg-[var(--onyx-accent-soft)] onyx-typing-dot"
           />
           <span
             style={{ animationDelay: '300ms' }}
@@ -596,7 +596,7 @@ export function MessageRenderer({
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium text-[var(--onyx-accent-soft)] underline decoration-blue-300/40 underline-offset-4 hover:text-blue-200 hover:decoration-blue-200"
+                  className="font-medium text-[var(--onyx-accent-soft)] underline decoration-[var(--onyx-accent-soft)]/40 underline-offset-4 hover:text-[var(--onyx-accent-soft)] hover:decoration-[var(--onyx-accent-soft)]"
                 >
                   {children}
                 </a>
@@ -654,7 +654,7 @@ export function MessageRenderer({
           {isStreamingLive && (
             <span
               aria-hidden="true"
-              className="inline-block h-4 w-1.5 animate-pulse rounded-sm bg-blue-400 align-middle"
+              className="inline-block h-4 w-1.5 animate-pulse rounded-sm bg-[var(--onyx-accent)] align-middle"
             />
           )}
         </div>

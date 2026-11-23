@@ -485,8 +485,8 @@ export function LocalAIHubSheet({
       : serverStatus === 'checking'
         ? {
             label: 'Checking...',
-            dotClass: 'bg-blue-400 animate-pulse',
-            textClass: 'text-blue-300',
+            dotClass: 'bg-[var(--onyx-accent)] animate-pulse',
+            textClass: 'text-[var(--onyx-accent-soft)]',
           }
         : serverStatus === 'offline'
           ? {
@@ -559,7 +559,7 @@ export function LocalAIHubSheet({
             type="button"
             onClick={onClose}
             aria-label="Close Local AI hub"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:bg-white/[0.07] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:bg-white/[0.07] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150"
           >
             <X size={18} weight="regular" />
           </button>
@@ -579,7 +579,7 @@ export function LocalAIHubSheet({
               onClick={() => onChangeEngineMode('cloud')}
               className={`flex h-10 items-center justify-center gap-2 rounded-xl font-sans text-xs font-medium active:scale-[0.97] transition-transform duration-150 ${
                 engineMode === 'cloud'
-                  ? 'onyx-accent-btn text-white shadow-sm shadow-blue-600/30'
+                  ? 'onyx-accent-btn text-white shadow-sm '
                   : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white'
               }`}
             >
@@ -593,7 +593,7 @@ export function LocalAIHubSheet({
               onClick={() => onChangeEngineMode('local')}
               className={`flex h-10 items-center justify-center gap-2 rounded-xl font-sans text-xs font-medium active:scale-[0.97] transition-transform duration-150 ${
                 engineMode === 'local'
-                  ? 'onyx-accent-btn text-white shadow-sm shadow-blue-600/30'
+                  ? 'onyx-accent-btn text-white shadow-sm '
                   : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white'
               }`}
             >
@@ -648,7 +648,7 @@ export function LocalAIHubSheet({
                         loadedNativeModel
                           ? 'bg-emerald-400'
                           : nativeAvailable
-                            ? 'bg-blue-400'
+                            ? 'bg-[var(--onyx-accent)]'
                             : 'bg-zinc-500'
                       }`}
                     />
@@ -733,7 +733,7 @@ export function LocalAIHubSheet({
                     type="button"
                     disabled={isImportingFile}
                     onClick={() => void handlePickLocalGgufFile()}
-                    className="shrink-0 rounded-xl onyx-accent-btn px-3 py-1.5 font-sans text-xs font-medium text-white hover:bg-blue-500 active:scale-[0.97] disabled:opacity-50"
+                    className="shrink-0 rounded-xl onyx-accent-btn px-3 py-1.5 font-sans text-xs font-medium text-white hover:bg-[var(--onyx-accent)] active:scale-[0.97] disabled:opacity-50"
                   >
                     {isImportingFile ? "Importing..." : "+ Pick File"}
                   </button>
@@ -745,7 +745,7 @@ export function LocalAIHubSheet({
                     value={customModelUrl}
                     onChange={(e) => setCustomModelUrl(e.target.value)}
                     placeholder="https://huggingface.co/.../model.gguf"
-                    className="h-9 min-w-0 flex-1 rounded-xl border border-white/10 bg-[#18181D] px-3 font-mono text-[11px] text-white placeholder:text-zinc-500 focus:border-blue-500/60 focus:outline-none"
+                    className="h-9 min-w-0 flex-1 rounded-xl border border-white/10 bg-[#18181D] px-3 font-mono text-[11px] text-white placeholder:text-zinc-500 focus:border-[var(--onyx-accent)]/60 focus:outline-none"
                   />
                   <button
                     type="button"
@@ -916,7 +916,7 @@ export function LocalAIHubSheet({
                             <h3 className="truncate font-sans text-sm font-medium text-white">
                               {model.name}
                             </h3>
-                            <span className="rounded-md bg-white/[0.06] px-1.5 py-0.5 font-mono text-[10px] text-blue-300">
+                            <span className="rounded-md bg-white/[0.06] px-1.5 py-0.5 font-mono text-[10px] text-[var(--onyx-accent-soft)]">
                               {model.quantization}
                             </span>
                             {model.category === 'uncensored' && (
@@ -968,7 +968,7 @@ export function LocalAIHubSheet({
                               {formatMB(currentDownloadedBytes).replace(' MB', '')}/
                               {formatMB(currentTotalBytes)}
                             </span>
-                            <span className="text-blue-300 whitespace-nowrap">
+                            <span className="text-[var(--onyx-accent-soft)] whitespace-nowrap">
                               {progressPct.toFixed(0)}%
                               {isDownloading &&
                               liveProgress &&
@@ -1011,7 +1011,7 @@ export function LocalAIHubSheet({
                                   onClick={() =>
                                     void handleLoadNativeModel(model)
                                   }
-                                  className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl onyx-accent-btn px-3 font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97] disabled:opacity-50 transition-transform duration-150"
+                                  className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl onyx-accent-btn px-3 font-sans text-xs font-medium text-white hover:bg-[var(--onyx-accent)] active:scale-[0.97] disabled:opacity-50 transition-transform duration-150"
                                 >
                                   <Cpu size={14} weight="bold" />
                                   <span>
@@ -1064,7 +1064,7 @@ export function LocalAIHubSheet({
                                 onClick={() =>
                                   void handleStartOrResumeDownload(model)
                                 }
-                                className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl onyx-accent-btn px-3 font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97]"
+                                className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl onyx-accent-btn px-3 font-sans text-xs font-medium text-white hover:bg-[var(--onyx-accent)] active:scale-[0.97]"
                               >
                                 <Play size={14} weight="fill" />
                                 <span>Resume</span>
@@ -1087,7 +1087,7 @@ export function LocalAIHubSheet({
                               onClick={() =>
                                 void handleStartOrResumeDownload(model)
                               }
-                              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl onyx-accent-btn px-3 font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-45 transition-transform duration-150"
+                              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl onyx-accent-btn px-3 font-sans text-xs font-medium text-white hover:bg-[var(--onyx-accent)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-45 transition-transform duration-150"
                             >
                               <DownloadSimple size={14} weight="bold" />
                               <span>Download GGUF ({model.size})</span>
@@ -1100,7 +1100,7 @@ export function LocalAIHubSheet({
                               href={model.huggingfaceUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl onyx-accent-btn px-3 font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97] transition-transform duration-150"
+                              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl onyx-accent-btn px-3 font-sans text-xs font-medium text-white hover:bg-[var(--onyx-accent)] active:scale-[0.97] transition-transform duration-150"
                             >
                               <DownloadSimple size={14} weight="bold" />
                               <span>Download GGUF</span>
@@ -1156,7 +1156,7 @@ export function LocalAIHubSheet({
                   type="button"
                   onClick={() => void handleTestConnection()}
                   disabled={serverStatus === 'checking'}
-                  className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#1E2436] px-3 font-sans text-xs font-medium text-blue-200 hover:bg-[#26304A] active:scale-[0.96] disabled:opacity-50 transition-transform duration-150"
+                  className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#1E2436] px-3 font-sans text-xs font-medium text-[var(--onyx-accent-soft)] hover:bg-[#26304A] active:scale-[0.96] disabled:opacity-50 transition-transform duration-150"
                 >
                   <PlugsConnected size={14} weight="regular" />
                   <span>
@@ -1226,7 +1226,7 @@ export function LocalAIHubSheet({
                       >
                         Temperature
                       </label>
-                      <span className="font-mono text-xs text-blue-300 tabular-nums">
+                      <span className="font-mono text-xs text-[var(--onyx-accent-soft)] tabular-nums">
                         {config.temperature.toFixed(1)}
                       </span>
                     </div>
@@ -1243,7 +1243,7 @@ export function LocalAIHubSheet({
                           temperature: Number(event.target.value),
                         })
                       }
-                      className="w-full accent-blue-500"
+                      className="w-full accent-[var(--onyx-accent)]"
                     />
                   </div>
 
@@ -1283,7 +1283,7 @@ export function LocalAIHubSheet({
                     <TerminalWindow
                       size={15}
                       weight="regular"
-                      className="text-blue-400"
+                      className="text-[var(--onyx-accent)]"
                     />
                     <span>Desktop / Browser llama-server Reference</span>
                   </span>

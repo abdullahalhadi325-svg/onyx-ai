@@ -167,7 +167,7 @@ export function TopBar({
             title={isTemporaryChat ? 'Temporary chat active' : 'Temporary chat'}
             className={`flex h-10 w-10 items-center justify-center rounded-full active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150 ${
               isTemporaryChat
-                ? 'bg-blue-500/20 text-blue-200'
+                ? 'bg-[var(--onyx-accent)]/20 text-[var(--onyx-accent-soft)]'
                 : 'text-zinc-400 hover:bg-white/[0.07] hover:text-white'
             }`}
           >

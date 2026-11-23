@@ -208,7 +208,7 @@ export function SettingsSheet({
             type="button"
             onClick={onClose}
             aria-label="Close settings"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 hover:bg-white/[0.07] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 hover:bg-white/[0.07] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150"
           >
             <X size={18} weight="regular" />
           </button>
@@ -221,7 +221,7 @@ export function SettingsSheet({
           <div className="rounded-2xl onyx-bento-card p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-2 font-sans text-xs font-medium text-zinc-200">
-                <ChartBar size={16} weight="regular" className="text-blue-400" />
+                <ChartBar size={16} weight="regular" className="text-[var(--onyx-accent)]" />
                 <span>Usage &amp; Token Monitor</span>
               </span>
               <span className="font-mono text-[11px] text-zinc-500 tabular-nums">
@@ -286,7 +286,7 @@ export function SettingsSheet({
                   onClose();
                   onOpenLocalAIHub();
                 }}
-                className="font-sans text-xs font-medium text-blue-400 hover:text-blue-300"
+                className="font-sans text-xs font-medium text-[var(--onyx-accent)] hover:text-[var(--onyx-accent-soft)]"
               >
                 Open Local Hub
               </button>
@@ -380,7 +380,7 @@ export function SettingsSheet({
                           </div>
                         </div>
                         {isSelected && (
-                          <Check size={15} weight="bold" className="shrink-0 text-blue-400" />
+                          <Check size={15} weight="bold" className="shrink-0 text-[var(--onyx-accent)]" />
                         )}
                       </button>
                     );
@@ -439,7 +439,7 @@ export function SettingsSheet({
                       >
                         <span>{option.name}</span>
                         {isSelected && (
-                          <Check size={15} weight="bold" className="shrink-0 text-blue-400" />
+                          <Check size={15} weight="bold" className="shrink-0 text-[var(--onyx-accent)]" />
                         )}
                       </button>
                     );
@@ -467,7 +467,7 @@ export function SettingsSheet({
                   Language
                 </span>
               </span>
-              <span className="shrink-0 rounded-full bg-white/[0.06] px-2.5 py-1 font-sans text-xs font-medium text-blue-300">
+              <span className="shrink-0 rounded-full bg-white/[0.06] px-2.5 py-1 font-sans text-xs font-medium text-[var(--onyx-accent-soft)]">
                 {speechLang === 'en-US' ? 'English (EN)' : 'Bangla (BN)'}
               </span>
             </button>
@@ -510,17 +510,17 @@ export function SettingsSheet({
                     <button
                       type="button"
                       onClick={handleExportJson}
-                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-white/[0.06] px-3 font-sans text-xs font-medium text-white hover:bg-white/[0.11] active:scale-[0.97]"
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl onyx-glass-btn px-3 font-sans text-xs font-medium text-white active:scale-[0.97]"
                     >
-                      <DownloadSimple size={14} weight="bold" className="text-blue-400" />
+                      <DownloadSimple size={14} weight="bold" className="text-[var(--onyx-accent)]" />
                       <span>Export JSON</span>
                     </button>
                     <button
                       type="button"
                       onClick={handleExportMarkdown}
-                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-white/[0.06] px-3 font-sans text-xs font-medium text-white hover:bg-white/[0.11] active:scale-[0.97]"
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl onyx-glass-btn px-3 font-sans text-xs font-medium text-white active:scale-[0.97]"
                     >
-                      <DownloadSimple size={14} weight="bold" className="text-blue-400" />
+                      <DownloadSimple size={14} weight="bold" className="text-[var(--onyx-accent)]" />
                       <span>Export MD</span>
                     </button>
                   </div>
@@ -582,7 +582,7 @@ export function SettingsSheet({
                   <ShieldCheck
                     size={18}
                     weight="regular"
-                    className="shrink-0 text-blue-400"
+                    className="shrink-0 text-[var(--onyx-accent)]"
                   />
                   <span className="truncate font-sans text-sm font-medium text-white">
                     Admin Panel
@@ -650,11 +650,11 @@ export function SettingsSheet({
                       href={DEVELOPER_LINKS.portfolio}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex min-h-[40px] flex-1 basis-[120px] items-center justify-center gap-1.5 rounded-xl bg-[#161923] px-3 py-2 font-sans text-xs font-medium text-white hover:bg-[#1E2333] active:scale-[0.97] transition-transform duration-150"
+                      className="flex min-h-[40px] flex-1 basis-[120px] items-center justify-center gap-1.5 rounded-xl onyx-glass-btn px-3 py-2 font-sans text-xs font-medium text-white active:scale-[0.97] transition-transform duration-150"
                     >
-                      <Globe size={15} weight="regular" className="shrink-0 text-blue-400" />
+                      <Globe size={15} weight="regular" className="shrink-0 text-[var(--onyx-accent)]" />
                       <span>Portfolio</span>
-                      <ArrowUpRight size={12} weight="bold" className="shrink-0 text-blue-300" />
+                      <ArrowUpRight size={12} weight="bold" className="shrink-0 text-[var(--onyx-accent-soft)]" />
                     </a>
 
                     <a
@@ -662,7 +662,7 @@ export function SettingsSheet({
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={`Telegram ${DEVELOPER_LINKS.telegramHandle}`}
-                      className="flex min-h-[40px] flex-1 basis-[140px] items-center justify-center gap-1.5 rounded-xl bg-[#131C2B] px-3 py-2 font-sans text-xs font-medium text-blue-100 hover:bg-[#1A283D] active:scale-[0.97] transition-transform duration-150"
+                      className="flex min-h-[40px] flex-1 basis-[140px] items-center justify-center gap-1.5 rounded-xl onyx-glass-btn px-3 py-2 font-sans text-xs font-medium text-zinc-100 active:scale-[0.97] transition-transform duration-150"
                     >
                       <TelegramLogo size={16} weight="fill" className="shrink-0 text-sky-400" />
                       <span className="truncate">{DEVELOPER_LINKS.telegramHandle}</span>

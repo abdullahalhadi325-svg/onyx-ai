@@ -140,7 +140,7 @@ export function AuthScreen({
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
       >
-        <div className="absolute -top-24 left-1/2 h-[320px] w-[min(520px,125vw)] -translate-x-1/2 rounded-full bg-[#1D4ED8]/24 blur-[110px]" />
+        <div className="absolute -top-24 left-1/2 h-[320px] w-[min(520px,125vw)] -translate-x-1/2 rounded-full blur-[110px]" style={{ background: "rgba(var(--onyx-accent-rgb), calc(0.3 * var(--onyx-glow-scale)))" }} />
         <div className="absolute -bottom-32 left-1/2 h-[220px] w-[min(460px,115vw)] -translate-x-1/2 rounded-full onyx-accent-btn/14 blur-[100px]" />
       </div>
 
@@ -162,11 +162,11 @@ export function AuthScreen({
           <div
             role="tablist"
             aria-label="Authentication mode"
-            className="relative mb-5 grid grid-cols-2 rounded-2xl border border-white/[0.08] bg-[#18181D] p-1"
+            className="relative mb-5 grid grid-cols-2 rounded-2xl border border-white/[0.08] onyx-bento-card-subtle p-1"
           >
             <div
               aria-hidden="true"
-              className={`pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-xl onyx-accent-btn shadow-md shadow-blue-600/25 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-xl onyx-accent-btn shadow-md  transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 authMode === 'signup' ? 'translate-x-full' : 'translate-x-0'
               }`}
             />
@@ -224,7 +224,7 @@ export function AuthScreen({
           {infoMessage && (
             <div
               role="status"
-              className="mb-4 flex items-start gap-2.5 rounded-2xl border border-blue-400/25 bg-[#101828] p-3.5 text-xs leading-relaxed text-blue-100"
+              className="mb-4 flex items-start gap-2.5 rounded-2xl border onyx-bento-card-subtle p-3.5 text-xs leading-relaxed text-zinc-200"
             >
               <CheckCircle
                 size={17}
@@ -251,7 +251,7 @@ export function AuthScreen({
                 value={fullName}
                 onChange={(event) => setFullName(event.target.value)}
                 placeholder="Enter your name"
-                className="h-11 w-full rounded-2xl border border-white/10 bg-[#18181D] px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-blue-500/60 focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-colors duration-200"
+                className="h-11 w-full rounded-2xl border border-white/10 onyx-bento-card-subtle px-4 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-[var(--onyx-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--onyx-accent)]/30 transition-colors duration-200"
               />
             </div>
 
@@ -280,7 +280,7 @@ export function AuthScreen({
                     }
                   }}
                   placeholder="you@domain.com"
-                  className="h-11 w-full rounded-2xl border border-white/10 bg-[#18181D] py-2.5 pr-4 pl-10 text-sm text-white placeholder:text-zinc-500 focus:border-blue-500/60 focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-colors duration-200"
+                  className="h-11 w-full rounded-2xl border border-white/10 onyx-bento-card-subtle py-2.5 pr-4 pl-10 text-sm text-white placeholder:text-zinc-500 focus:border-[var(--onyx-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--onyx-accent)]/30 transition-colors duration-200"
                 />
               </div>
             </div>
@@ -328,7 +328,7 @@ export function AuthScreen({
                       ? 'Enter password'
                       : 'At least 6 characters'
                   }
-                  className="h-11 w-full rounded-2xl border border-white/10 bg-[#18181D] py-2.5 pr-11 pl-10 text-sm text-white placeholder:text-zinc-500 focus:border-blue-500/60 focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-colors duration-200"
+                  className="h-11 w-full rounded-2xl border border-white/10 onyx-bento-card-subtle py-2.5 pr-11 pl-10 text-sm text-white placeholder:text-zinc-500 focus:border-[var(--onyx-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--onyx-accent)]/30 transition-colors duration-200"
                 />
                 <button
                   type="button"
@@ -348,7 +348,7 @@ export function AuthScreen({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl onyx-accent-btn px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/25  active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 disabled:cursor-not-allowed disabled:opacity-60 transition-transform duration-150"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl onyx-accent-btn px-4 text-sm font-semibold text-white shadow-lg   active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 disabled:cursor-not-allowed disabled:opacity-60 transition-transform duration-150"
             >
               <span>
                 {isSubmitting

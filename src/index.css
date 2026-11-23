@@ -351,78 +351,180 @@
 :root {
   --onyx-accent: #F97316;
   --onyx-accent-soft: #FB923C;
+  --onyx-accent-deep: #9A3412;
   --onyx-accent-rgb: 249, 115, 22;
+  --onyx-glow-scale: 0.75;
+  --onyx-glass-alpha: 0.72;
+  --onyx-font-base: 15.5px;
 }
 
-[data-onyx-theme="lime"] {
-  --onyx-accent: #BEF264;
-  --onyx-accent-soft: #D9F99D;
-  --onyx-accent-rgb: 190, 242, 100;
-}
-
-[data-onyx-theme="cyan"] {
-  --onyx-accent: #38BDF8;
-  --onyx-accent-soft: #7DD3FC;
-  --onyx-accent-rgb: 56, 189, 248;
-}
-
-[data-onyx-theme="crimson"] {
-  --onyx-accent: #F43F5E;
-  --onyx-accent-soft: #FB7185;
-  --onyx-accent-rgb: 244, 63, 94;
-}
-
+/* আসল ফ্রস্টেড লিকুইড গ্লাস বেন্টো কার্ড (Directional Warm Light Bleed + Specular Top Rim) */
 .onyx-bento-card {
   background:
     radial-gradient(
-      120% 90% at 88% 8%,
-      rgba(var(--onyx-accent-rgb), 0.16) 0%,
-      rgba(var(--onyx-accent-rgb), 0.03) 45%,
-      rgba(12, 12, 15, 0.96) 100%
+      115% 85% at 88% 6%,
+      rgba(var(--onyx-accent-rgb), calc(0.24 * var(--onyx-glow-scale))) 0%,
+      rgba(var(--onyx-accent-rgb), calc(0.06 * var(--onyx-glow-scale))) 42%,
+      rgba(16, 15, 18, var(--onyx-glass-alpha)) 100%
     ),
-    #0C0C0F;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.085) 0%,
+      rgba(14, 14, 18, 0.88) 100%
+    );
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-top-color: rgba(255, 255, 255, 0.24);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 12px 32px -12px rgba(0, 0, 0, 0.85);
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(var(--onyx-accent-rgb), 0.12),
+    0 14px 34px -14px rgba(0, 0, 0, 0.88);
 }
 
 .onyx-bento-card-subtle {
   background:
     radial-gradient(
-      100% 80% at 10% 0%,
-      rgba(var(--onyx-accent-rgb), 0.09) 0%,
-      rgba(14, 14, 18, 0.94) 70%
+      110% 80% at 12% 0%,
+      rgba(var(--onyx-accent-rgb), calc(0.14 * var(--onyx-glow-scale))) 0%,
+      rgba(18, 18, 22, var(--onyx-glass-alpha)) 68%
     ),
-    #0E0E12;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09);
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.065) 0%,
+      rgba(12, 12, 16, 0.86) 100%
+    );
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-top-color: rgba(255, 255, 255, 0.19);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 10px 26px -12px rgba(0, 0, 0, 0.8);
 }
 
+/* Tactile Frosted Glass Secondary Button (মরা বাটন দূর করবে) */
+.onyx-glass-btn {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.11) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-top-color: rgba(255, 255, 255, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 6px 18px -6px rgba(0, 0, 0, 0.7);
+  transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease;
+}
+
+.onyx-glass-btn:active {
+  transform: scale(0.95);
+}
+
+/* Primary Molten Accent Pill Button */
 .onyx-accent-btn {
   background: linear-gradient(
     180deg,
     var(--onyx-accent-soft) 0%,
     var(--onyx-accent) 100%
   );
-  color: #09090B;
+  color: #09090B !important;
   font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.35);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    0 8px 24px -6px rgba(var(--onyx-accent-rgb), 0.55);
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 10px 28px -6px rgba(var(--onyx-accent-rgb), calc(0.65 * var(--onyx-glow-scale)));
   transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), filter 0.16s ease;
 }
 
 .onyx-accent-btn:active {
-  transform: scale(0.95);
-  filter: brightness(0.95);
+  transform: scale(0.94);
+  filter: brightness(0.94);
 }
 
+/* Dynamic Top & Bottom Ambient Edge Glow */
 .onyx-ambient-top {
   background: radial-gradient(
-    85% 42% at 50% 0%,
-    rgba(var(--onyx-accent-rgb), 0.22) 0%,
-    rgba(var(--onyx-accent-rgb), 0.05) 45%,
+    88% 46% at 50% 0%,
+    rgba(var(--onyx-accent-rgb), calc(0.32 * var(--onyx-glow-scale))) 0%,
+    rgba(var(--onyx-accent-rgb), calc(0.08 * var(--onyx-glow-scale))) 45%,
     rgba(0, 0, 0, 0) 100%
   );
+}
+
+/* Dynamic Hue Rainbow Slider Track */
+.onyx-hue-slider {
+  background: linear-gradient(
+    90deg,
+    hsl(0, 95%, 55%),
+    hsl(45, 95%, 55%),
+    hsl(90, 90%, 58%),
+    hsl(160, 90%, 52%),
+    hsl(205, 95%, 55%),
+    hsl(275, 90%, 62%),
+    hsl(345, 95%, 58%),
+    hsl(360, 95%, 55%)
+  );
+}
+
+
+/* === FUTURISTIC 60FPS ORB ANIMATIONS === */
+@keyframes onyx-orb-spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes onyx-orb-spin-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes onyx-orb-breathe {
+  0%, 100% { transform: scale(0.97); }
+  50% { transform: scale(1.035); }
+}
+
+@keyframes onyx-orb-pulse-ring {
+  0% { transform: scale(0.88); opacity: 0.55; }
+  70% { opacity: 0.14; }
+  100% { transform: scale(1.42); opacity: 0; }
+}
+
+@keyframes onyx-core-morph {
+  0%, 100% { border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%; }
+  33% { border-radius: 53% 47% 52% 48% / 48% 53% 47% 52%; }
+  66% { border-radius: 47% 53% 48% 52% / 52% 47% 53% 48%; }
+}
+
+.onyx-orb-spin-slow {
+  animation: onyx-orb-spin-slow 8s linear infinite;
+  will-change: transform;
+}
+
+.onyx-orb-spin-reverse {
+  animation: onyx-orb-spin-reverse 12s linear infinite;
+  will-change: transform;
+}
+
+.onyx-hud-spin-cw {
+  transform-origin: 80px 80px;
+  animation: onyx-orb-spin-slow 20s linear infinite;
+  will-change: transform;
+}
+
+.onyx-hud-spin-ccw {
+  transform-origin: 80px 80px;
+  animation: onyx-orb-spin-reverse 15s linear infinite;
+  will-change: transform;
+}
+
+.onyx-orb-breathe {
+  animation: onyx-orb-breathe 3.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.onyx-orb-pulse-ring {
+  animation: onyx-orb-pulse-ring 3.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  will-change: transform, opacity;
+}
+
+.onyx-core-morph {
+  animation: onyx-core-morph 5.5s ease-in-out infinite;
 }

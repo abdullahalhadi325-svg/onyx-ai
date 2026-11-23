@@ -363,7 +363,7 @@ export function InputDock({
                 <WarningCircle
                   size={15}
                   weight="regular"
-                  className="shrink-0 text-blue-300"
+                  className="shrink-0 text-[var(--onyx-accent-soft)]"
                 />
                 <span className="truncate">{voiceError}</span>
               </span>
@@ -390,7 +390,7 @@ export function InputDock({
                 <div className="truncate font-sans text-xs font-medium text-white">
                   {activeTools.attachedImage.fileName}
                 </div>
-                <div className="mt-0.5 font-mono text-[11px] text-blue-300/80">
+                <div className="mt-0.5 font-mono text-[11px] text-[var(--onyx-accent-soft)]/80">
                   Vision · Gemini Ready
                 </div>
               </div>
@@ -413,11 +413,11 @@ export function InputDock({
                   type="button"
                   onClick={onToggleCreateImage}
                   aria-label="Remove Create Image"
-                  className="flex h-8 items-center gap-1.5 rounded-full bg-[#121828] px-3 font-mono text-xs text-blue-200 hover:bg-[#192238] active:scale-[0.96] transition-transform duration-150"
+                  className="flex h-8 items-center gap-1.5 rounded-full onyx-glass-btn px-3 font-mono text-xs text-[var(--onyx-accent-soft)]  active:scale-[0.96] transition-transform duration-150"
                 >
                   <ImageIcon size={14} weight="regular" />
                   <span>Image · Flux</span>
-                  <X size={12} weight="bold" className="text-blue-300/70" />
+                  <X size={12} weight="bold" className="text-[var(--onyx-accent-soft)]/70" />
                 </button>
               )}
 
@@ -490,7 +490,7 @@ export function InputDock({
                           height: `${heightPx}px`,
                           animationDelay: `${idx * 95}ms`,
                         }}
-                        className="w-1 rounded-full bg-[#3B82F6] onyx-waveform-bar"
+                        className="w-1 rounded-full bg-[var(--onyx-accent)] onyx-waveform-bar"
                       />
                     ))}
                   </div>
@@ -507,7 +507,7 @@ export function InputDock({
                     type="button"
                     onClick={stopVoiceRecognition}
                     aria-label="Stop voice dictation"
-                    className="flex h-11 w-11 items-center justify-center rounded-full bg-[#222533] text-white hover:bg-[#2C3042] active:scale-[0.96] transition-transform duration-150"
+                    className="flex h-11 w-11 items-center justify-center rounded-full onyx-glass-btn text-white active:scale-[0.96] transition-transform duration-150"
                   >
                     <Stop size={17} weight="fill" />
                   </button>
@@ -517,7 +517,7 @@ export function InputDock({
                     onClick={handleDispatch}
                     disabled={!canSend}
                     aria-label="Send voice message"
-                    className="flex h-11 w-11 items-center justify-center rounded-full onyx-accent-btn text-white shadow-lg shadow-blue-600/25  active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-45 transition-transform duration-150"
+                    className="flex h-11 w-11 items-center justify-center rounded-full onyx-accent-btn text-white shadow-lg   active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-45 transition-transform duration-150"
                   >
                     <ArrowUp size={19} weight="bold" />
                   </button>
@@ -533,7 +533,7 @@ export function InputDock({
                   aria-label="Open tool actions"
                   aria-expanded={isSheetOpen}
                   aria-haspopup="dialog"
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150 ${
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150 ${
                     isSheetOpen || hasActiveTools
                       ? 'bg-[#21273A] text-white hover:bg-[#2A324A]'
                       : 'text-zinc-300 hover:bg-white/[0.08] hover:text-white'
@@ -580,7 +580,7 @@ export function InputDock({
                     onClick={handleVoiceToggle}
                     aria-label="Start voice dictation"
                     aria-pressed={isListening}
-                    className="flex h-11 w-11 items-center justify-center rounded-full text-zinc-300 hover:bg-white/[0.08] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150"
+                    className="flex h-11 w-11 items-center justify-center rounded-full text-zinc-300 hover:bg-white/[0.08] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150"
                   >
                     <Microphone size={19} weight="regular" />
                   </button>
@@ -590,7 +590,7 @@ export function InputDock({
                       type="button"
                       onClick={onStopGeneration}
                       aria-label="Stop generation"
-                      className="flex h-11 w-11 items-center justify-center rounded-full bg-[#222533] text-white hover:bg-[#2C3042] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-transform duration-150"
+                      className="flex h-11 w-11 items-center justify-center rounded-full onyx-glass-btn text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150"
                     >
                       <Stop size={17} weight="fill" />
                     </button>
@@ -600,9 +600,9 @@ export function InputDock({
                       onClick={handleDispatch}
                       disabled={!canSend}
                       aria-label="Send message"
-                      className={`flex h-11 w-11 items-center justify-center rounded-full active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-transform duration-150 ${
+                      className={`flex h-11 w-11 items-center justify-center rounded-full active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150 ${
                         canSend
-                          ? 'onyx-accent-btn text-white shadow-lg shadow-blue-600/30 '
+                          ? 'onyx-accent-btn text-white shadow-lg  '
                           : 'cursor-not-allowed bg-[#1B1E28] text-zinc-500'
                       }`}
                     >
@@ -656,7 +656,7 @@ export function InputDock({
               onClick={() => cameraInputRef.current?.click()}
               className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl bg-[#16171E] px-2 py-3 text-white hover:bg-[#1E202B] active:scale-[0.96] transition-transform duration-150"
             >
-              <Camera size={22} weight="regular" className="text-blue-300" />
+              <Camera size={22} weight="regular" className="text-[var(--onyx-accent-soft)]" />
               <span className="text-xs font-medium text-zinc-200">Camera</span>
             </button>
 
@@ -665,7 +665,7 @@ export function InputDock({
               onClick={() => photosInputRef.current?.click()}
               className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl bg-[#16171E] px-2 py-3 text-white hover:bg-[#1E202B] active:scale-[0.96] transition-transform duration-150"
             >
-              <Images size={22} weight="regular" className="text-blue-300" />
+              <Images size={22} weight="regular" className="text-[var(--onyx-accent-soft)]" />
               <span className="text-xs font-medium text-zinc-200">Photos</span>
             </button>
 
@@ -674,7 +674,7 @@ export function InputDock({
               onClick={() => filesInputRef.current?.click()}
               className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl bg-[#16171E] px-2 py-3 text-white hover:bg-[#1E202B] active:scale-[0.96] transition-transform duration-150"
             >
-              <FileArrowUp size={22} weight="regular" className="text-blue-300" />
+              <FileArrowUp size={22} weight="regular" className="text-[var(--onyx-accent-soft)]" />
               <span className="text-xs font-medium text-zinc-200">Files</span>
             </button>
           </div>
@@ -730,7 +730,7 @@ export function InputDock({
               })`}
               className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-[#1C1E28] px-3.5 font-mono text-xs font-medium text-white hover:bg-[#252836] active:scale-[0.96] transition-transform duration-150"
             >
-              <Translate size={15} weight="regular" className="text-blue-400" />
+              <Translate size={15} weight="regular" className="text-[var(--onyx-accent)]" />
               <span>{speechLang === 'en-US' ? 'EN' : 'BN'}</span>
             </button>
           </div>
@@ -755,7 +755,7 @@ export function InputDock({
                 <GlobeHemisphereWest
                   size={19}
                   weight="regular"
-                  className="shrink-0 text-blue-300"
+                  className="shrink-0 text-[var(--onyx-accent-soft)]"
                 />
                 <span className="min-w-0">
                   <span className="block text-sm font-medium text-white">
@@ -767,7 +767,7 @@ export function InputDock({
                 </span>
               </span>
               {isDeepResearchOn && (
-                <Check size={16} weight="bold" className="shrink-0 text-blue-400" />
+                <Check size={16} weight="bold" className="shrink-0 text-[var(--onyx-accent)]" />
               )}
             </button>
 
@@ -790,7 +790,7 @@ export function InputDock({
                 <ImageIcon
                   size={19}
                   weight="regular"
-                  className="shrink-0 text-blue-300"
+                  className="shrink-0 text-[var(--onyx-accent-soft)]"
                 />
                 <span className="min-w-0">
                   <span className="block text-sm font-medium text-white">
@@ -804,7 +804,7 @@ export function InputDock({
                 </span>
               </span>
               {activeTools.createImage && (
-                <Check size={16} weight="bold" className="shrink-0 text-blue-400" />
+                <Check size={16} weight="bold" className="shrink-0 text-[var(--onyx-accent)]" />
               )}
             </button>
           </div>

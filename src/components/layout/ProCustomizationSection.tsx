@@ -1,9 +1,12 @@
 import { useState } from "react";
 import {
+  DEFAULT_CUSTOMIZATION,
+  PRESET_HUES,
   loadCustomization,
   saveCustomization,
   type OnyxAccentTheme,
   type OnyxCustomization,
+  type OnyxFontScale,
   type OnyxOrbStyle,
 } from "../../lib/customization";
 import {
@@ -12,7 +15,7 @@ import {
   SpeedometerDial,
 } from "../common/TelemetryWidgets";
 
-const THEMES: { id: OnyxAccentTheme; label: string; color: string }[] = [
+const THEMES: { id: Exclude<OnyxAccentTheme, "custom">; label: string; color: string }[] = [
   { id: "amber", label: "Amber", color: "#F97316" },
   { id: "lime", label: "Lime", color: "#BEF264" },
   { id: "cyan", label: "Cyan", color: "#38BDF8" },
@@ -30,6 +33,11 @@ export function ProCustomizationSection() {
     });
   }
 
+  function resetAll() {
+    setCfg(DEFAULT_CUSTOMIZATION);
+    saveCustomization(DEFAULT_CUSTOMIZATION);
+  }
+
   const tokenPercent = Math.round(((cfg.maxTokens - 512) / (4096 - 512)) * 100);
   const tempLabel =
     cfg.temperature <= 0.35
@@ -40,7 +48,7 @@ export function ProCustomizationSection() {
 
   return (
     <div className="space-y-3">
-      {/* স্পিডোমিটার আর্ক ডায়াল: AI Temperature */}
+      {/* ১. স্পিডোমিটার আর্ক ডায়াল: AI Temperature */}
       <SpeedometerDial
         value={cfg.temperature}
         min={0}
@@ -52,7 +60,7 @@ export function ProCustomizationSection() {
         onChange={(v) => update({ temperature: v })}
       />
 
-      {/* ২x২ ওয়ার্ম বেন্টো কার্ড + সেগমেন্টেড বার */}
+      {/* ২. ২x২ ওয়ার্ম বেন্টো কার্ড: Max Tokens + Orb Style */}
       <div className="grid grid-cols-2 gap-2.5">
         <div className="onyx-bento-card rounded-2xl p-3.5 space-y-2.5">
           <div className="flex items-center justify-between">
@@ -73,7 +81,7 @@ export function ProCustomizationSection() {
                 className={`flex-1 rounded-lg py-1 font-mono text-[10px] font-medium transition-all active:scale-95 ${
                   cfg.maxTokens === tk
                     ? "onyx-accent-btn"
-                    : "bg-white/[0.06] text-zinc-400 hover:text-white"
+                    : "onyx-glass-btn text-zinc-300 hover:text-white"
                 }`}
               >
                 {tk >= 1024 ? `${tk / 1024}K` : tk}
@@ -85,11 +93,14 @@ export function ProCustomizationSection() {
         <div className="onyx-bento-card rounded-2xl p-3.5 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="font-mono text-[10px] tracking-wider text-zinc-400 uppercase">
-              Orb Style
+              Orb Core
             </span>
             <span
               className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: "var(--onyx-accent)" }}
+              style={{
+                backgroundColor: "var(--onyx-accent)",
+                boxShadow: "0 0 8px rgba(var(--onyx-accent-rgb), 0.9)",
+              }}
             />
           </div>
           <div className="grid grid-cols-1 gap-1.5 pt-1">
@@ -98,29 +109,30 @@ export function ProCustomizationSection() {
                 key={style}
                 type="button"
                 onClick={() => update({ orbStyle: style })}
-                className={`h-8 rounded-xl font-sans text-xs font-medium capitalize transition-all active:scale-95 ${
+                className={`h-8 rounded-xl font-sans text-xs font-medium transition-all active:scale-95 ${
                   cfg.orbStyle === style
                     ? "onyx-accent-btn"
-                    : "bg-white/[0.05] text-zinc-300 hover:bg-white/[0.09]"
+                    : "onyx-glass-btn text-zinc-200 hover:text-white"
                 }`}
               >
-                {style === "eclipse" ? "Solar Eclipse" : "3D Sphere"}
+                {style === "eclipse" ? "Solar Eclipse" : "3D Plasma"}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* অ্যাকসেন্ট থিম সিলেক্টর */}
-      <div className="onyx-bento-card-subtle rounded-2xl p-3.5 space-y-2.5">
+      {/* ৩. লাইভ কালার হিউ স্লাইডার + প্রিসেট থিম */}
+      <div className="onyx-bento-card rounded-2xl p-3.5 space-y-3">
         <div className="flex items-center justify-between">
-          <span className="font-sans text-xs font-medium text-zinc-200">
-            Accent Theme
+          <span className="font-sans text-xs font-semibold text-white">
+            Accent Color & Hue
           </span>
-          <span className="font-mono text-[10px] text-zinc-400 uppercase">
-            {cfg.accentTheme}
+          <span className="font-mono text-[10px] text-zinc-300 uppercase">
+            {cfg.accentTheme === "custom" ? `HUE ${cfg.accentHue}°` : cfg.accentTheme}
           </span>
         </div>
+
         <div className="grid grid-cols-4 gap-2">
           {THEMES.map((t) => {
             const active = cfg.accentTheme === t.id;
@@ -128,11 +140,13 @@ export function ProCustomizationSection() {
               <button
                 key={t.id}
                 type="button"
-                onClick={() => update({ accentTheme: t.id })}
+                onClick={() =>
+                  update({ accentTheme: t.id, accentHue: PRESET_HUES[t.id] })
+                }
                 className={`flex flex-col items-center gap-1.5 rounded-xl border py-2 transition-all active:scale-95 ${
                   active
-                    ? "border-white/30 bg-white/[0.09]"
-                    : "border-white/[0.06] bg-white/[0.02]"
+                    ? "border-white/35 bg-white/[0.12]"
+                    : "onyx-glass-btn border-white/[0.08]"
                 }`}
               >
                 <span
@@ -142,16 +156,101 @@ export function ProCustomizationSection() {
                     boxShadow: active ? `0 0 12px ${t.color}` : "none",
                   }}
                 />
-                <span className="font-sans text-[10px] font-medium text-zinc-300">
+                <span className="font-sans text-[10px] font-medium text-zinc-200">
                   {t.label}
                 </span>
               </button>
             );
           })}
         </div>
+
+        {/* 0-360 Rainbow Hue Slider */}
+        <div className="space-y-1.5 pt-1">
+          <div className="flex items-center justify-between font-mono text-[10px] text-zinc-400">
+            <span>CUSTOM SPECTRUM</span>
+            <span className="text-white">{cfg.accentHue}°</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={360}
+            step={1}
+            value={cfg.accentHue}
+            onChange={(e) =>
+              update({ accentTheme: "custom", accentHue: Number(e.target.value) })
+            }
+            className="onyx-hue-slider h-2.5 w-full cursor-pointer appearance-none rounded-full border border-white/20"
+          />
+        </div>
       </div>
 
-      {/* ফ্রস্টেড গ্লাস টগল সুইচ কন্ট্রোল */}
+      {/* ৪. গ্লো ইনটেনসিটি + গ্লাস ডেপথ স্লাইডার */}
+      <div className="onyx-bento-card-subtle rounded-2xl p-3.5 space-y-3.5">
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="font-sans text-xs font-medium text-zinc-200">
+              Glow Intensity
+            </span>
+            <span className="font-mono text-[11px] text-zinc-300">
+              {cfg.glowIntensity}%
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={cfg.glowIntensity}
+            onChange={(e) => update({ glowIntensity: Number(e.target.value) })}
+            className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-[var(--onyx-accent)]"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="font-sans text-xs font-medium text-zinc-200">
+              Frosted Glass Depth
+            </span>
+            <span className="font-mono text-[11px] text-zinc-300">
+              {cfg.glassOpacity}%
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={cfg.glassOpacity}
+            onChange={(e) => update({ glassOpacity: Number(e.target.value) })}
+            className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-[var(--onyx-accent)]"
+          />
+        </div>
+
+        {/* ফন্ট সাইজ স্কেল */}
+        <div className="space-y-1.5 pt-1">
+          <span className="block font-sans text-xs font-medium text-zinc-200">
+            Text Size
+          </span>
+          <div className="grid grid-cols-3 gap-2">
+            {(["compact", "default", "large"] as OnyxFontScale[]).map((sc) => (
+              <button
+                key={sc}
+                type="button"
+                onClick={() => update({ fontScale: sc })}
+                className={`h-8 rounded-xl font-sans text-xs font-medium capitalize transition-all active:scale-95 ${
+                  cfg.fontScale === sc
+                    ? "onyx-accent-btn"
+                    : "onyx-glass-btn text-zinc-300 hover:text-white"
+                }`}
+              >
+                {sc}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ৫. ফ্রস্টেড গ্লাস টগল সুইচ কন্ট্রোল */}
       <div className="onyx-bento-card-subtle rounded-2xl p-3.5 space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -169,7 +268,25 @@ export function ProCustomizationSection() {
           />
         </div>
 
-        <div className="h-px bg-white/[0.06]" />
+        <div className="h-px bg-white/[0.07]" />
+
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="font-sans text-xs font-medium text-white">
+              Haptic Vibration
+            </p>
+            <p className="font-sans text-[11px] text-zinc-400">
+              Tactile feedback on controls
+            </p>
+          </div>
+          <FrostedGlassToggle
+            checked={cfg.haptics}
+            onChange={(v) => update({ haptics: v })}
+            ariaLabel="Toggle Haptic Feedback"
+          />
+        </div>
+
+        <div className="h-px bg-white/[0.07]" />
 
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -188,17 +305,26 @@ export function ProCustomizationSection() {
         </div>
       </div>
 
-      {/* কাস্টম সিস্টেম প্রম্পট */}
-      <div className="onyx-bento-card-subtle rounded-2xl p-3.5 space-y-2">
-        <label className="block font-sans text-xs font-medium text-zinc-200">
-          Custom AI Persona / System Prompt
-        </label>
+      {/* ৬. কাস্টম সিস্টেম প্রম্পট + রিসেট */}
+      <div className="onyx-bento-card-subtle rounded-2xl p-3.5 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <label className="font-sans text-xs font-medium text-zinc-200">
+            Custom AI Persona / System Prompt
+          </label>
+          <button
+            type="button"
+            onClick={resetAll}
+            className="onyx-glass-btn rounded-lg px-2.5 py-1 font-mono text-[10px] text-zinc-300 hover:text-white"
+          >
+            RESET
+          </button>
+        </div>
         <textarea
           rows={2}
           value={cfg.customSystemPrompt}
           onChange={(e) => update({ customSystemPrompt: e.target.value })}
           placeholder="e.g. Reply like Jarvis, concise, direct and technical..."
-          className="w-full resize-none rounded-xl border border-white/10 bg-black/40 px-3 py-2 font-sans text-xs text-white placeholder:text-zinc-500 focus:border-[var(--onyx-accent)] focus:outline-none"
+          className="w-full resize-none rounded-xl border border-white/15 bg-black/45 px-3 py-2 font-sans text-xs text-white placeholder:text-zinc-500 focus:border-[var(--onyx-accent)] focus:outline-none"
         />
       </div>
     </div>
