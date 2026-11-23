@@ -517,7 +517,7 @@ export function InputDock({
                     onClick={handleDispatch}
                     disabled={!canSend}
                     aria-label="Send voice message"
-                    className="flex h-11 w-11 items-center justify-center rounded-full bg-[#2563EB] text-white shadow-lg shadow-blue-600/25 hover:bg-[#3B82F6] active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-45 transition-transform duration-150"
+                    className="flex h-11 w-11 items-center justify-center rounded-full onyx-accent-btn text-white shadow-lg shadow-blue-600/25  active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-45 transition-transform duration-150"
                   >
                     <ArrowUp size={19} weight="bold" />
                   </button>
@@ -602,7 +602,7 @@ export function InputDock({
                       aria-label="Send message"
                       className={`flex h-11 w-11 items-center justify-center rounded-full active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-transform duration-150 ${
                         canSend
-                          ? 'bg-[#2563EB] text-white shadow-lg shadow-blue-600/30 hover:bg-[#3B82F6]'
+                          ? 'onyx-accent-btn text-white shadow-lg shadow-blue-600/30 '
                           : 'cursor-not-allowed bg-[#1B1E28] text-zinc-500'
                       }`}
                     >
@@ -688,7 +688,7 @@ export function InputDock({
             >
               <div
                 aria-hidden="true"
-                className={`pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-lg bg-[#2563EB] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                className={`pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-lg onyx-accent-btn transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                   inputMode === 'task' ? 'translate-x-full' : 'translate-x-0'
                 }`}
               />

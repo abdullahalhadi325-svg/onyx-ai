@@ -1,3 +1,5 @@
+import { applyCustomizationToDom, loadCustomization } from "./lib/customization";
+applyCustomizationToDom(loadCustomization());
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';

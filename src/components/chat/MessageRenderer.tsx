@@ -175,7 +175,7 @@ function ThinkingAuditAccordion({
         className="flex min-h-[38px] w-full items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-left text-xs text-zinc-300 hover:bg-white/[0.05] hover:text-white active:scale-[0.98] transition-colors duration-150"
       >
         <span className="flex min-w-0 items-center gap-2">
-          <Brain size={15} weight="regular" className="shrink-0 text-blue-400" />
+          <Brain size={15} weight="regular" className="shrink-0 text-[var(--onyx-accent)]" />
           <span className="truncate font-medium text-zinc-200">
             View Reasoning Log
           </span>
@@ -344,7 +344,7 @@ function GeneratedImageCard({
               })
             }
             aria-label="Open generated image fullscreen"
-            className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50"
+            className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50"
           >
             <img
               src={imageSrc}
@@ -596,7 +596,7 @@ export function MessageRenderer({
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium text-blue-300 underline decoration-blue-300/40 underline-offset-4 hover:text-blue-200 hover:decoration-blue-200"
+                  className="font-medium text-[var(--onyx-accent-soft)] underline decoration-blue-300/40 underline-offset-4 hover:text-blue-200 hover:decoration-blue-200"
                 >
                   {children}
                 </a>
@@ -675,7 +675,7 @@ export function MessageRenderer({
                 rel="noopener noreferrer"
                 className="inline-flex min-h-[34px] max-w-full items-center gap-1.5 rounded-full bg-[#15151C] px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-[#1F1F29] hover:text-white active:scale-[0.97] transition-transform duration-150"
               >
-                <Globe size={13} weight="regular" className="shrink-0 text-blue-400" />
+                <Globe size={13} weight="regular" className="shrink-0 text-[var(--onyx-accent)]" />
                 <span className="truncate">{source.title}</span>
                 <ArrowUpRight
                   size={12}
@@ -771,7 +771,7 @@ export function MessageRenderer({
                 }}
                 className="flex min-h-[38px] w-full items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2 text-left text-xs font-medium text-zinc-200 hover:bg-white/[0.08] hover:text-white active:scale-[0.97]"
               >
-                <GitBranch size={15} weight="regular" className="shrink-0 text-blue-400" />
+                <GitBranch size={15} weight="regular" className="shrink-0 text-[var(--onyx-accent)]" />
                 <span>Branch in new chat</span>
               </button>
             )}

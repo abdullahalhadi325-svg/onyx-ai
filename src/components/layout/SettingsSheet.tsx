@@ -1,3 +1,4 @@
+import { ProCustomizationSection } from "./ProCustomizationSection";
 import { useEffect, useState } from 'react';
 import {
   ArrowUpRight,
@@ -216,7 +217,8 @@ export function SettingsSheet({
         {/* Scrollable Body */}
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-7">
           {/* 1. Usage & Token Monitor */}
-          <div className="rounded-2xl bg-[#111115] p-4 space-y-3">
+          <ProCustomizationSection />
+          <div className="rounded-2xl onyx-bento-card p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-2 font-sans text-xs font-medium text-zinc-200">
                 <ChartBar size={16} weight="regular" className="text-blue-400" />
@@ -238,7 +240,7 @@ export function SettingsSheet({
               <div className="h-2 w-full overflow-hidden rounded-full bg-[#1C1C24]">
                 <div
                   style={{ width: `${usagePercent}%` }}
-                  className="h-full rounded-full bg-[#2563EB] transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                  className="h-full rounded-full bg-[var(--onyx-accent)] transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
                 />
               </div>
             </div>
@@ -296,7 +298,7 @@ export function SettingsSheet({
                 onClick={() => onChangeEngineMode('cloud')}
                 className={`flex h-9 items-center justify-center gap-1.5 rounded-lg font-sans text-xs font-medium active:scale-[0.97] transition-colors duration-150 ${
                   engineMode === 'cloud'
-                    ? 'bg-[#2563EB] text-white'
+                    ? 'bg-[var(--onyx-accent)] text-white'
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
@@ -309,7 +311,7 @@ export function SettingsSheet({
                 onClick={() => onChangeEngineMode('local')}
                 className={`flex h-9 items-center justify-center gap-1.5 rounded-lg font-sans text-xs font-medium active:scale-[0.97] transition-colors duration-150 ${
                   engineMode === 'local'
-                    ? 'bg-[#2563EB] text-white'
+                    ? 'bg-[var(--onyx-accent)] text-white'
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
@@ -365,7 +367,7 @@ export function SettingsSheet({
                         aria-pressed={isSelected}
                         className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left active:scale-[0.98] transition-colors duration-150 ${
                           isSelected
-                            ? 'bg-[#2563EB]/20 text-white'
+                            ? 'bg-[var(--onyx-accent)]/20 text-white'
                             : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white'
                         }`}
                       >
@@ -431,7 +433,7 @@ export function SettingsSheet({
                         aria-pressed={isSelected}
                         className={`flex min-h-[40px] w-full items-center justify-between rounded-xl px-3 py-2 text-left font-sans text-sm active:scale-[0.98] transition-colors duration-150 ${
                           isSelected
-                            ? 'bg-[#2563EB]/20 text-white font-medium'
+                            ? 'bg-[var(--onyx-accent)]/20 text-white font-medium'
                             : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white'
                         }`}
                       >

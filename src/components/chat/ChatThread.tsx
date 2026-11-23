@@ -76,7 +76,7 @@ export function ChatThread({
           <Detective
             size={15}
             weight="regular"
-            className="shrink-0 text-blue-300"
+            className="shrink-0 text-[var(--onyx-accent-soft)]"
           />
           <span>Temporary chat active · Not saved to local history or cloud</span>
         </div>
@@ -110,7 +110,7 @@ export function ChatThread({
                       <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-xs text-zinc-400">
                         {message.toolsUsed.createImage && (
                           <span className="inline-flex items-center gap-1">
-                            <ImageIcon size={13} weight="regular" className="shrink-0 text-blue-400" />
+                            <ImageIcon size={13} weight="regular" className="shrink-0 text-[var(--onyx-accent)]" />
                             <span>Create Image</span>
                           </span>
                         )}
@@ -214,7 +214,7 @@ export function ChatThread({
                           <CheckSquare
                             size={18}
                             weight="fill"
-                            className="mt-0.5 shrink-0 text-blue-400"
+                            className="mt-0.5 shrink-0 text-[var(--onyx-accent)]"
                           />
                         ) : (
                           <Square

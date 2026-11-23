@@ -114,7 +114,7 @@ export function Sidebar({
             type="button"
             onClick={onClose}
             aria-label="Close sidebar"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 hover:bg-white/[0.07] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 hover:bg-white/[0.07] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150"
           >
             <X size={18} weight="regular" />
           </button>
@@ -128,7 +128,7 @@ export function Sidebar({
               onNewChat();
               onClose();
             }}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#2563EB] px-4 font-sans text-sm font-medium text-white shadow-md shadow-blue-600/20 hover:bg-[#3B82F6] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-transform duration-150"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-full onyx-accent-btn px-4 font-sans text-sm font-medium text-white shadow-md shadow-blue-600/20  active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-transform duration-150"
           >
             <Plus size={16} weight="bold" />
             <span>New Chat</span>
@@ -140,14 +140,14 @@ export function Sidebar({
               onClose();
               onOpenLocalAIHub();
             }}
-            className={`flex h-10 w-full items-center justify-between gap-2 rounded-xl px-3.5 font-sans text-sm font-medium active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-colors duration-150 ${
+            className={`flex h-10 w-full items-center justify-between gap-2 rounded-xl px-3.5 font-sans text-sm font-medium active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-colors duration-150 ${
               engineMode === 'local'
-                ? 'bg-[#2563EB]/20 text-white'
-                : 'bg-[#121216] text-zinc-200 hover:bg-[#191920]'
+                ? 'onyx-bento-card border-[var(--onyx-accent)]/40 text-white'
+                : 'onyx-bento-card-subtle text-zinc-200 hover:bg-[#191920]'
             }`}
           >
             <span className="flex items-center gap-2.5">
-              <Cpu size={17} weight="regular" className="text-blue-400" />
+              <Cpu size={17} weight="regular" className="text-[var(--onyx-accent)]" />
               <span>Local AI</span>
             </span>
             <span
@@ -178,7 +178,7 @@ export function Sidebar({
               onBlur={() => setIsSearchFocused(false)}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search chats"
-              className="h-10 w-full rounded-xl bg-[#121216] py-2 pr-9 pl-9 font-sans text-sm text-white placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
+              className="h-10 w-full rounded-xl onyx-bento-card-subtle py-2 pr-9 pl-9 font-sans text-sm text-white placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/40"
             />
             {searchQuery && (
               <button
@@ -228,7 +228,7 @@ export function Sidebar({
                       onSelectChat(chat.id);
                       onClose();
                     }}
-                    className={`flex min-h-[42px] w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 transition-colors duration-150 ${
+                    className={`onyx-bento-card-subtle mb-1.5 flex min-h-[48px] w-full items-center justify-between gap-2 rounded-2xl px-3.5 py-2.5 text-left active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/40 transition-colors duration-150 ${
                       isActive
                         ? 'bg-white/[0.09] text-white'
                         : 'text-zinc-300 hover:bg-white/[0.04] hover:text-white'
@@ -250,14 +250,14 @@ export function Sidebar({
         {/* 4. Compact 1-Row Footer + Tiny Credit */}
         {!hideFooterForKeyboard && (
           <div className="shrink-0 px-3 pt-2 pb-3">
-            <div className="flex items-center justify-between gap-2 rounded-2xl bg-[#121216] p-2">
+            <div className="flex items-center justify-between gap-2 rounded-2xl onyx-bento-card-subtle p-2">
               <button
                 type="button"
                 onClick={() => {
                   onClose();
                   onOpenSettings();
                 }}
-                className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl p-1 text-left hover:bg-white/[0.04] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 transition-transform duration-150"
+                className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl p-1 text-left hover:bg-white/[0.04] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/40 transition-transform duration-150"
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F2230] font-sans text-xs font-medium text-white">
                   {userProfile.initials}
@@ -274,7 +274,7 @@ export function Sidebar({
                   onOpenSettings();
                 }}
                 aria-label="Open settings"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-zinc-400 hover:bg-white/[0.07] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 transition-transform duration-150"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-zinc-400 hover:bg-white/[0.07] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/40 transition-transform duration-150"
               >
                 <GearSix size={18} weight="regular" />
               </button>

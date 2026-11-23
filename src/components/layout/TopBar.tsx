@@ -111,7 +111,7 @@ export function TopBar({
             onClick={onToggleSidebar}
             aria-label={isSidebarOpen ? 'Close navigation sidebar' : 'Open navigation sidebar'}
             aria-expanded={isSidebarOpen}
-            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-zinc-300 hover:bg-white/[0.07] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150"
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-zinc-300 hover:bg-white/[0.07] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150"
           >
             <span
               aria-hidden="true"
@@ -139,10 +139,10 @@ export function TopBar({
             onClick={() => setIsDropdownOpen((prev) => !prev)}
             aria-expanded={isDropdownOpen}
             aria-haspopup="menu"
-            className="flex h-10 max-w-[210px] items-center gap-1.5 rounded-full px-3.5 text-sm font-medium text-white hover:bg-white/[0.07] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150 sm:max-w-none"
+            className="flex h-10 max-w-[210px] items-center gap-1.5 rounded-full px-3.5 text-sm font-medium text-white hover:bg-white/[0.07] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150 sm:max-w-none"
           >
             {engineMode === 'local' && (
-              <Cpu size={15} weight="fill" className="shrink-0 text-blue-400" />
+              <Cpu size={15} weight="fill" className="shrink-0 text-[var(--onyx-accent)]" />
             )}
             <span className="truncate whitespace-nowrap">
               {engineMode === 'local' ? 'Local AI' : activeMode.label}
@@ -165,7 +165,7 @@ export function TopBar({
             aria-label={isTemporaryChat ? 'Disable temporary chat' : 'Enable temporary chat'}
             aria-pressed={isTemporaryChat}
             title={isTemporaryChat ? 'Temporary chat active' : 'Temporary chat'}
-            className={`flex h-10 w-10 items-center justify-center rounded-full active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150 ${
+            className={`flex h-10 w-10 items-center justify-center rounded-full active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150 ${
               isTemporaryChat
                 ? 'bg-blue-500/20 text-blue-200'
                 : 'text-zinc-400 hover:bg-white/[0.07] hover:text-white'
@@ -178,7 +178,7 @@ export function TopBar({
             type="button"
             onClick={onOpenSettings}
             aria-label="Open settings and profile"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#18181F] font-mono text-xs font-medium text-zinc-200 hover:bg-[#23232D] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150"
+            className="flex h-9 w-9 items-center justify-center rounded-full onyx-bento-card-subtle font-mono text-xs font-medium text-zinc-200 hover:bg-[#23232D] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150"
           >
             {userInitials}
           </button>
@@ -210,7 +210,7 @@ export function TopBar({
                     onSelectRoutingMode(mode.id);
                     setIsDropdownOpen(false);
                   }}
-                  className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 transition-colors duration-150 ${
+                  className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/40 transition-colors duration-150 ${
                     isSelected
                       ? 'bg-white/[0.09] text-white'
                       : 'text-zinc-300 hover:bg-white/[0.05] hover:text-white'
@@ -228,7 +228,7 @@ export function TopBar({
                     </div>
                   </div>
                   {isSelected && (
-                    <Check size={15} weight="bold" className="shrink-0 text-blue-400" />
+                    <Check size={15} weight="bold" className="shrink-0 text-[var(--onyx-accent)]" />
                   )}
                 </button>
               );
@@ -245,14 +245,14 @@ export function TopBar({
                 setIsDropdownOpen(false);
                 onOpenLocalAIHub();
               }}
-              className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 transition-colors duration-150 ${
+              className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/40 transition-colors duration-150 ${
                 engineMode === 'local'
-                  ? 'bg-[#2563EB]/20 text-white'
+                  ? 'onyx-bento-card border-[var(--onyx-accent)]/40 text-white'
                   : 'text-zinc-300 hover:bg-white/[0.05] hover:text-white'
               }`}
             >
               <div className="flex min-w-0 items-center gap-2.5">
-                <Cpu size={17} weight="regular" className="shrink-0 text-blue-400" />
+                <Cpu size={17} weight="regular" className="shrink-0 text-[var(--onyx-accent)]" />
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium text-white">
                     Local AI &amp; GGUF Hub
@@ -263,7 +263,7 @@ export function TopBar({
                 </div>
               </div>
               {engineMode === 'local' ? (
-                <Check size={15} weight="bold" className="shrink-0 text-blue-400" />
+                <Check size={15} weight="bold" className="shrink-0 text-[var(--onyx-accent)]" />
               ) : (
                 <span className="shrink-0 rounded-full bg-white/[0.06] px-2 py-0.5 font-mono text-[10px] text-zinc-400">
                   Hub
@@ -308,13 +308,13 @@ export function TopBar({
                       onClick={() => onSelectPersona(option.id)}
                       className={`flex items-center justify-between gap-1.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium active:scale-[0.97] ${
                         isSelected
-                          ? 'bg-[#2563EB]/20 text-white'
+                          ? 'onyx-bento-card border-[var(--onyx-accent)]/40 text-white'
                           : 'text-zinc-400 hover:bg-white/[0.05] hover:text-white'
                       }`}
                     >
                       <span className="truncate">{option.name}</span>
                       {isSelected && (
-                        <Check size={12} weight="bold" className="shrink-0 text-blue-400" />
+                        <Check size={12} weight="bold" className="shrink-0 text-[var(--onyx-accent)]" />
                       )}
                     </button>
                   );

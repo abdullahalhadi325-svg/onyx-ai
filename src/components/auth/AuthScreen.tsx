@@ -141,7 +141,7 @@ export function AuthScreen({
         className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
       >
         <div className="absolute -top-24 left-1/2 h-[320px] w-[min(520px,125vw)] -translate-x-1/2 rounded-full bg-[#1D4ED8]/24 blur-[110px]" />
-        <div className="absolute -bottom-32 left-1/2 h-[220px] w-[min(460px,115vw)] -translate-x-1/2 rounded-full bg-[#2563EB]/14 blur-[100px]" />
+        <div className="absolute -bottom-32 left-1/2 h-[220px] w-[min(460px,115vw)] -translate-x-1/2 rounded-full onyx-accent-btn/14 blur-[100px]" />
       </div>
 
       <main className="relative z-10 w-full max-w-[404px] onyx-fade-up">
@@ -166,7 +166,7 @@ export function AuthScreen({
           >
             <div
               aria-hidden="true"
-              className={`pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-xl bg-[#2563EB] shadow-md shadow-blue-600/25 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`pointer-events-none absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-xl onyx-accent-btn shadow-md shadow-blue-600/25 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 authMode === 'signup' ? 'translate-x-full' : 'translate-x-0'
               }`}
             />
@@ -179,7 +179,7 @@ export function AuthScreen({
                 setErrorMessage(null);
                 setInfoMessage(null);
               }}
-              className={`relative z-10 flex h-10 items-center justify-center rounded-xl text-sm font-medium whitespace-nowrap active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150 ${
+              className={`relative z-10 flex h-10 items-center justify-center rounded-xl text-sm font-medium whitespace-nowrap active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150 ${
                 authMode === 'signin'
                   ? 'text-white'
                   : 'text-zinc-400 hover:text-white'
@@ -196,7 +196,7 @@ export function AuthScreen({
                 setErrorMessage(null);
                 setInfoMessage(null);
               }}
-              className={`relative z-10 flex h-10 items-center justify-center rounded-xl text-sm font-medium whitespace-nowrap active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150 ${
+              className={`relative z-10 flex h-10 items-center justify-center rounded-xl text-sm font-medium whitespace-nowrap active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150 ${
                 authMode === 'signup'
                   ? 'text-white'
                   : 'text-zinc-400 hover:text-white'
@@ -229,7 +229,7 @@ export function AuthScreen({
               <CheckCircle
                 size={17}
                 weight="regular"
-                className="mt-0.5 shrink-0 text-blue-400"
+                className="mt-0.5 shrink-0 text-[var(--onyx-accent)]"
               />
               <span>{infoMessage}</span>
             </div>
@@ -298,7 +298,7 @@ export function AuthScreen({
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => void handleForgotPassword()}
-                    className="text-xs font-medium text-blue-400 hover:text-blue-300 disabled:opacity-50"
+                    className="text-xs font-medium text-[var(--onyx-accent)] hover:text-[var(--onyx-accent-soft)] disabled:opacity-50"
                   >
                     Forgot password?
                   </button>
@@ -334,7 +334,7 @@ export function AuthScreen({
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute top-1/2 right-1.5 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-zinc-400 hover:bg-[#272727] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 transition-transform duration-150"
+                  className="absolute top-1/2 right-1.5 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-zinc-400 hover:bg-[#272727] hover:text-white active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--onyx-accent)]/50 transition-transform duration-150"
                 >
                   {showPassword ? (
                     <EyeSlash size={17} weight="regular" />
@@ -348,7 +348,7 @@ export function AuthScreen({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#2563EB] px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-[#3B82F6] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 disabled:cursor-not-allowed disabled:opacity-60 transition-transform duration-150"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl onyx-accent-btn px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/25  active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 disabled:cursor-not-allowed disabled:opacity-60 transition-transform duration-150"
             >
               <span>
                 {isSubmitting

@@ -579,7 +579,7 @@ export function LocalAIHubSheet({
               onClick={() => onChangeEngineMode('cloud')}
               className={`flex h-10 items-center justify-center gap-2 rounded-xl font-sans text-xs font-medium active:scale-[0.97] transition-transform duration-150 ${
                 engineMode === 'cloud'
-                  ? 'bg-[#2563EB] text-white shadow-sm shadow-blue-600/30'
+                  ? 'onyx-accent-btn text-white shadow-sm shadow-blue-600/30'
                   : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white'
               }`}
             >
@@ -593,7 +593,7 @@ export function LocalAIHubSheet({
               onClick={() => onChangeEngineMode('local')}
               className={`flex h-10 items-center justify-center gap-2 rounded-xl font-sans text-xs font-medium active:scale-[0.97] transition-transform duration-150 ${
                 engineMode === 'local'
-                  ? 'bg-[#2563EB] text-white shadow-sm shadow-blue-600/30'
+                  ? 'onyx-accent-btn text-white shadow-sm shadow-blue-600/30'
                   : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white'
               }`}
             >
@@ -612,7 +612,7 @@ export function LocalAIHubSheet({
             className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl font-sans text-xs font-medium active:scale-[0.97] transition-colors duration-150 ${
               activeTab === 'models'
                 ? 'bg-white/[0.1] text-white'
-                : 'bg-[#121216] text-zinc-400 hover:text-white'
+                : 'onyx-bento-card-subtle text-zinc-400 hover:text-white'
             }`}
           >
             <DownloadSimple size={15} weight="regular" />
@@ -627,7 +627,7 @@ export function LocalAIHubSheet({
             className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl font-sans text-xs font-medium active:scale-[0.97] transition-colors duration-150 ${
               activeTab === 'server'
                 ? 'bg-white/[0.1] text-white'
-                : 'bg-[#121216] text-zinc-400 hover:text-white'
+                : 'onyx-bento-card-subtle text-zinc-400 hover:text-white'
             }`}
           >
             <HardDrives size={15} weight="regular" />
@@ -640,7 +640,7 @@ export function LocalAIHubSheet({
           {activeTab === 'models' ? (
             <div className="space-y-3.5">
               {/* Native Engine & Device Storage Card */}
-              <div className="space-y-3 rounded-2xl bg-[#121216] p-3.5">
+              <div className="space-y-3 rounded-2xl onyx-bento-card-subtle p-3.5">
                 <div className="flex items-start justify-between gap-2.5">
                   <div className="flex min-w-0 items-center gap-2.5">
                     <span
@@ -710,7 +710,7 @@ export function LocalAIHubSheet({
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#1D1E26]">
                       <div
-                        className="h-full rounded-full bg-[#2563EB] transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                        className="h-full rounded-full onyx-accent-btn transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
                         style={{ width: `${storageUsedPercent}%` }}
                       />
                     </div>
@@ -719,7 +719,7 @@ export function LocalAIHubSheet({
               </div>
 
               {/* Custom .GGUF Importer (Phone Storage + Direct URL) */}
-              <div className="space-y-2.5 rounded-2xl border border-white/[0.08] bg-[#121216] p-3.5">
+              <div className="space-y-2.5 rounded-2xl border border-white/[0.08] onyx-bento-card-subtle p-3.5">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <p className="font-sans text-xs font-semibold text-white">
@@ -733,7 +733,7 @@ export function LocalAIHubSheet({
                     type="button"
                     disabled={isImportingFile}
                     onClick={() => void handlePickLocalGgufFile()}
-                    className="shrink-0 rounded-xl bg-[#2563EB] px-3 py-1.5 font-sans text-xs font-medium text-white hover:bg-blue-500 active:scale-[0.97] disabled:opacity-50"
+                    className="shrink-0 rounded-xl onyx-accent-btn px-3 py-1.5 font-sans text-xs font-medium text-white hover:bg-blue-500 active:scale-[0.97] disabled:opacity-50"
                   >
                     {isImportingFile ? "Importing..." : "+ Pick File"}
                   </button>
@@ -789,7 +789,7 @@ export function LocalAIHubSheet({
                                   }
                                 }
                               }}
-                              className={`rounded-lg px-2.5 py-1 text-[11px] font-medium ${isLoaded ? "bg-emerald-500/20 text-emerald-300" : "bg-[#2563EB] text-white"}`}
+                              className={`rounded-lg px-2.5 py-1 text-[11px] font-medium ${isLoaded ? "bg-emerald-500/20 text-emerald-300" : "onyx-accent-btn text-white"}`}
                             >
                               {isLoaded ? "Unload" : "Load"}
                             </button>
@@ -850,7 +850,7 @@ export function LocalAIHubSheet({
                     aria-pressed={categoryFilter === filter}
                     className={`h-8 rounded-full px-3 font-sans text-xs font-medium capitalize active:scale-[0.96] transition-colors duration-150 ${
                       categoryFilter === filter
-                        ? 'bg-[#2563EB] text-white'
+                        ? 'onyx-accent-btn text-white'
                         : 'bg-[#141418] text-zinc-400 hover:text-white'
                     }`}
                   >
@@ -908,7 +908,7 @@ export function LocalAIHubSheet({
                   return (
                     <div
                       key={model.id}
-                      className="space-y-2.5 rounded-2xl bg-[#121216] p-3.5"
+                      className="space-y-2.5 rounded-2xl onyx-bento-card-subtle p-3.5"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -980,7 +980,7 @@ export function LocalAIHubSheet({
                           <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#1C1D25]">
                             <div
                               className={`h-full rounded-full transition-[width] duration-200 ease-out ${
-                                isPaused ? 'bg-amber-400' : 'bg-[#2563EB]'
+                                isPaused ? 'bg-amber-400' : 'onyx-accent-btn'
                               }`}
                               style={{
                                 width: `${Math.min(100, Math.max(2, progressPct))}%`,
@@ -1011,7 +1011,7 @@ export function LocalAIHubSheet({
                                   onClick={() =>
                                     void handleLoadNativeModel(model)
                                   }
-                                  className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#2563EB] px-3 font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97] disabled:opacity-50 transition-transform duration-150"
+                                  className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl onyx-accent-btn px-3 font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97] disabled:opacity-50 transition-transform duration-150"
                                 >
                                   <Cpu size={14} weight="bold" />
                                   <span>
@@ -1064,7 +1064,7 @@ export function LocalAIHubSheet({
                                 onClick={() =>
                                   void handleStartOrResumeDownload(model)
                                 }
-                                className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#2563EB] px-3 font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97]"
+                                className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl onyx-accent-btn px-3 font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97]"
                               >
                                 <Play size={14} weight="fill" />
                                 <span>Resume</span>
@@ -1087,7 +1087,7 @@ export function LocalAIHubSheet({
                               onClick={() =>
                                 void handleStartOrResumeDownload(model)
                               }
-                              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#2563EB] px-3 font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-45 transition-transform duration-150"
+                              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl onyx-accent-btn px-3 font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-45 transition-transform duration-150"
                             >
                               <DownloadSimple size={14} weight="bold" />
                               <span>Download GGUF ({model.size})</span>
@@ -1100,7 +1100,7 @@ export function LocalAIHubSheet({
                               href={model.huggingfaceUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#2563EB] px-3 font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97] transition-transform duration-150"
+                              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl onyx-accent-btn px-3 font-sans text-xs font-medium text-white hover:bg-[#3B82F6] active:scale-[0.97] transition-transform duration-150"
                             >
                               <DownloadSimple size={14} weight="bold" />
                               <span>Download GGUF</span>
@@ -1136,7 +1136,7 @@ export function LocalAIHubSheet({
           ) : (
             <div className="space-y-4">
               {/* Connection Status Bar */}
-              <div className="flex items-center justify-between gap-3 rounded-2xl bg-[#121216] p-3.5">
+              <div className="flex items-center justify-between gap-3 rounded-2xl onyx-bento-card-subtle p-3.5">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <span
                     className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusBadge.dotClass}`}
@@ -1166,7 +1166,7 @@ export function LocalAIHubSheet({
               </div>
 
               {/* Endpoint & Generation Parameters */}
-              <div className="space-y-3 rounded-2xl bg-[#121216] p-4">
+              <div className="space-y-3 rounded-2xl onyx-bento-card-subtle p-4">
                 <div>
                   <label
                     htmlFor="onyx-local-endpoint"
@@ -1277,7 +1277,7 @@ export function LocalAIHubSheet({
               </div>
 
               {/* Desktop / Browser llama-server CLI Reference */}
-              <div className="rounded-2xl bg-[#121216] p-4">
+              <div className="rounded-2xl onyx-bento-card-subtle p-4">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <span className="flex items-center gap-1.5 font-sans text-xs font-medium text-zinc-200">
                     <TerminalWindow
